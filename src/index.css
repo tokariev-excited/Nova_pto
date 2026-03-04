@@ -1,0 +1,141 @@
+@import url('https://fonts.googleapis.com/css2?family=Instrument+Sans:ital,wght@0,400..700;1,400..700&display=swap');
+@import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
+
+@custom-variant dark (&:is(.dark *));
+
+/* ===== shadcn Color Mappings + Figma Custom Tokens ===== */
+@theme inline {
+  /* --- shadcn core (required by all components) --- */
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+
+  /* --- shadcn chart colors --- */
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+
+  /* --- shadcn sidebar --- */
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
+
+  /* --- shadcn radius --- */
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+
+  /* --- Figma custom: focus rings --- */
+  --color-focus-ring: var(--focus-ring);
+  --color-destructive-ring: var(--destructive-ring);
+
+  /* --- Figma custom: focus border --- */
+  --color-focus: var(--focus);
+
+  /* --- Figma custom: focus shadows --- */
+  --shadow-focus: 0 0 0 3px var(--focus-ring);
+  --shadow-destructive-focus: 0 0 0 3px var(--destructive-ring);
+  --shadow-switch-focus: 0 0 0 1px var(--focus), 0 0 0 4px var(--focus-ring);
+}
+
+/* ===== Static Theme Tokens (Figma additions) ===== */
+@theme {
+  --font-sans: 'Instrument Sans', sans-serif;
+
+  /* Figma status colors */
+  --color-success: #16a34a;
+  --color-success-foreground: #15803d;
+  --color-success-light: #f0fdf4;
+  --color-success-bg: #dcfce7;
+  --color-warning: #f97316;
+  --color-warning-foreground: #ea580c;
+  --color-warning-light: #fff7ed;
+  --color-warning-bg: #ffedd5;
+  --color-error: #ef4444;
+  --color-error-foreground: #dc2626;
+  --color-error-light: #fef2f2;
+  --color-error-bg: #ffe2e2;
+  --color-info-bg: #ede9fe;
+
+  /* Figma shadows */
+  --shadow-2xs: 0 1px 2px 0 #1a1a1a0d;
+  --shadow-xs: 0 1px 2px 0 #1a1a1a0d;
+  --shadow-sm: 0 1px 4px -1px #1a1a1a0d, 0 1px 2px -1px #1a1a1a0d;
+  --shadow-md: 0 2px 4px -2px #1a1a1a0d, 0 4px 6px -1px #1a1a1a0d;
+  --shadow-lg: 0 4px 6px -4px #1a1a1a0d, 0 10px 15px -3px #1a1a1a0d;
+}
+
+/* ===== CSS Custom Properties (Figma values) ===== */
+:root {
+  --background: #ffffff;
+  --foreground: #09090b;
+  --card: #ffffff;
+  --card-foreground: #09090b;
+  --popover: #ffffff;
+  --popover-foreground: #09090b;
+  --primary: #171717;
+  --primary-foreground: #fafafa;
+  --secondary: #f5f5f5;
+  --secondary-foreground: #171717;
+  --muted: #f4f4f5;
+  --muted-foreground: #71717a;
+  --accent: #f5f5f5;
+  --accent-foreground: #171717;
+  --destructive: #dc2626;
+  --destructive-foreground: #fafafa;
+  --border: #e4e4e7;
+  --input: #e6e6e6;
+  --ring: #09090b;
+  --chart-1: #e76e50;
+  --chart-2: #2a9d90;
+  --chart-3: #274754;
+  --chart-4: #e9c46a;
+  --chart-5: #f4a462;
+  --sidebar: #fafafa;
+  --sidebar-foreground: #0a0a0a;
+  --sidebar-primary: #171717;
+  --sidebar-primary-foreground: #fafafa;
+  --sidebar-accent: #f5f5f5;
+  --sidebar-accent-foreground: #171717;
+  --sidebar-border: #e4e4e7;
+  --sidebar-ring: #09090b;
+  --radius: 0.75rem;
+  --focus: #a3a3a3;
+  --focus-ring: #a3a3a380;
+  --destructive-ring: #dc282866;
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+}
