@@ -6,7 +6,7 @@ interface NovaLogoProps {
 }
 
 export function NovaLogo({ className, size = 40 }: NovaLogoProps) {
-  const src = size === 24 ? "/assets/logo-24.png" : "/assets/logo-40.png"
+  const src = "/assets/Logo.svg"
   const dim = size === 24 ? "size-6" : "size-[40px]"
   return (
     <img
