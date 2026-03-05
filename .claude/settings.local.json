@@ -14,7 +14,8 @@
       "mcp__plugin_figma_figma__get_screenshot",
       "Bash(python3:*)",
       "Bash(node:*)",
-      "Bash(test:*)"
+      "Bash(test:*)",
+      "mcp__ide__getDiagnostics"
     ]
   }
 }
