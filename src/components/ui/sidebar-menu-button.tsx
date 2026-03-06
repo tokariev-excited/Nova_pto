@@ -1,17 +1,16 @@
 import * as React from "react"
 import { cva, type VariantProps } from "class-variance-authority"
 import { Slot } from "radix-ui"
-import { ChevronDown } from "lucide-react"
 
 import { cn } from "@/lib/utils"
 
 const sidebarMenuButtonVariants = cva(
-  "flex items-center rounded-md outline-none text-sidebar-foreground transition-colors [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4",
+  "flex items-center justify-start rounded-[calc(var(--radius)-2px)] outline-none text-sidebar-foreground transition-colors [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4",
   {
     variants: {
       type: {
         simple: "gap-2 font-medium",
-        "large-icon": "gap-2",
+        "large-icon": "gap-2 cursor-default",
       },
       collapsed: {
         false: "w-full",
@@ -46,7 +45,7 @@ function SidebarMenuButton({
   mediaAsset,
   children,
   ...props
-}: React.ComponentProps<"button"> &
+}: Omit<React.ComponentProps<"button">, "type"> &
   VariantProps<typeof sidebarMenuButtonVariants> & {
     isActive?: boolean
     asChild?: boolean
@@ -63,7 +62,7 @@ function SidebarMenuButton({
       data-active={isActive || undefined}
       className={cn(
         sidebarMenuButtonVariants({ type, collapsed }),
-        stateClasses,
+        type === "simple" && stateClasses,
         className
       )}
       {...props}
@@ -73,7 +72,7 @@ function SidebarMenuButton({
           {icon}
           {!collapsed && (
             <>
-              <span className="flex-1 truncate text-sm leading-none">
+              <span className="flex-1 truncate text-sm leading-none text-left">
                 {children}
               </span>
               {rightIcon}
@@ -86,12 +85,11 @@ function SidebarMenuButton({
         <>
           {mediaAsset}
           {!collapsed && (
-            <>
-              <span className="flex-1 truncate text-sm font-semibold leading-none">
+            <div className="flex flex-1 flex-col items-start justify-center gap-0.5 min-w-0">
+              <span className="w-full truncate text-sm font-semibold leading-none">
                 {children}
               </span>
-              <ChevronDown className="size-4 opacity-50" />
-            </>
+            </div>
           )}
         </>
       )}

@@ -4,11 +4,11 @@ import { cva, type VariantProps } from "class-variance-authority"
 import { cn } from "@/lib/utils"
 
 const sidebarGroupVariants = cva(
-  "flex flex-col items-start p-2",
+  "flex flex-col items-start pl-2 py-2",
   {
     variants: {
       collapsed: {
-        false: "w-full gap-1",
+        false: "w-full gap-1 pr-4",
         true: "gap-0",
       },
     },

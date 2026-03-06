@@ -1,9 +1,10 @@
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom"
 import { AuthProvider } from "@/contexts/auth-context"
 import { ProtectedRoute } from "@/components/protected-route"
+import { DashboardLayout } from "@/components/layout/DashboardLayout"
 import { LoginPage } from "@/pages/login"
 import { CheckEmailPage } from "@/pages/otp-verification"
-import { DashboardPage } from "@/pages/dashboard"
+import { RequestsPage } from "@/pages/requests"
 
 export default function App() {
   return (
@@ -16,10 +17,17 @@ export default function App() {
             path="/dashboard"
             element={
               <ProtectedRoute>
-                <DashboardPage />
+                <DashboardLayout />
               </ProtectedRoute>
             }
-          />
+          >
+            <Route index element={<Navigate to="requests" replace />} />
+            <Route path="requests" element={<RequestsPage />} />
+            <Route path="employees" element={<div className="p-8">Employees</div>} />
+            <Route path="calendar" element={<div className="p-8">Calendar</div>} />
+            <Route path="time-off-setup" element={<div className="p-8">Time-off setup</div>} />
+            <Route path="settings" element={<div className="p-8">Settings</div>} />
+          </Route>
           <Route path="*" element={<Navigate to="/dashboard" replace />} />
         </Routes>
       </BrowserRouter>

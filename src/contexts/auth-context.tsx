@@ -6,6 +6,7 @@ import { runFounderFlow } from "@/lib/founder-flow"
 interface Workspace {
   id: string
   name: string
+  logo_url?: string
   created_at: string
 }
 
@@ -14,6 +15,8 @@ interface Profile {
   workspace_id: string
   role: string
   email: string
+  full_name?: string
+  avatar_url?: string
   created_at: string
 }
 
