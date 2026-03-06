@@ -16,7 +16,7 @@ export interface TabGroupProps
 function TabGroup({ items, ...props }: TabGroupProps) {
   return (
     <Tabs defaultValue={items[0]?.value} data-slot="tab-group" {...props}>
-      <TabsList className="bg-secondary p-1 rounded-xl">
+      <TabsList className="bg-secondary p-1 rounded-lg">
         {items.map((item) => (
           <TabsTrigger key={item.value} value={item.value}>
             {item.label}

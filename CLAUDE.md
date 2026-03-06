@@ -29,15 +29,31 @@ VITE_SUPABASE_ANON_KEY=...
 
 ### Key flows
 
-- `src/App.tsx` — router root. All routes wrapped in `AuthProvider`. `/dashboard` is behind `ProtectedRoute`.
+- `src/App.tsx` — router root. All routes wrapped in `AuthProvider`. `/dashboard` is behind `ProtectedRoute`. Dashboard uses nested routes via `<Outlet />` in `DashboardLayout`.
+- **Auth sequence**: `/login` (enter email) → Supabase sends OTP → `/check-email` (enter 6-digit code) → verify → redirect to `/dashboard`.
 - `src/contexts/auth-context.tsx` — central auth state. Exposes `user`, `session`, `workspace`, `profile`, `loading`, `signOut`. On first sign-in (`SIGNED_IN` event), runs `runFounderFlow` to auto-provision a workspace and profile for new users.
 - `src/lib/founder-flow.ts` — first-time user setup: creates a `workspaces` row and a `profiles` row (role: `admin`) in Supabase. Idempotent — skips if profile already exists.
 - `src/lib/supabase.ts` — single shared Supabase client.
 
 ### Supabase schema (inferred)
 
-- `workspaces` — `id`, `name`, `created_at`
-- `profiles` — `id` (= auth user id), `workspace_id`, `role`, `email`, `created_at`
+- `workspaces` — `id`, `name`, `logo_url?`, `created_at`
+- `profiles` — `id` (= auth user id), `workspace_id`, `role`, `email`, `full_name?`, `avatar_url?`, `created_at`
+- `time_off_requests` (inferred from types) — `id`, `profile_id`, `workspace_id`, `employee_name`, `employee_email`, `employee_avatar_url?`, `start_date`, `end_date`, `request_type`, `status`, `comment?`, `created_at`, `updated_at`
+
+### Dashboard routes
+
+Defined in `src/App.tsx`. `/dashboard` redirects to `/dashboard/requests`. Currently implemented pages:
+- `requests` — `RequestsPage` (full UI, Supabase fetch pending)
+- `employees`, `calendar`, `time-off-setup`, `settings` — stub `<div>` placeholders
+
+### Types
+
+- `src/types/time-off-request.ts` — `TimeOffRequest`, `TimeOffStatus` (`"pending" | "approved" | "rejected"`), `TimeOffType` (`"vacation" | "sick_leave" | "personal" | "bereavement" | "other"`)
+
+### Layout structure
+
+`DashboardLayout`: outer `div` with `bg-sidebar-accent p-2 flex h-screen overflow-hidden`, containing a fixed-width `Sidebar` (260px) and a `main` that is `flex-1 overflow-y-auto rounded-xl bg-background`. The sidebar background is visually inset into the app chrome.
 
 ### Styling
 
@@ -51,6 +67,10 @@ Custom tokens beyond shadcn defaults:
 ### Component conventions
 
 - UI primitives live in `src/components/ui/`. These are custom components (not auto-generated shadcn CLI output) built to match Figma specs exactly.
+- Radix primitives come from the unified `radix-ui` package (e.g. `import { Tabs, Slot } from "radix-ui"`), **not** individual `@radix-ui/*` packages.
+- Component variants are built with `cva` from `class-variance-authority`.
+- All UI primitives use a `data-slot="<name>"` attribute for identification (e.g. `data-slot="button"`, `data-slot="tabs-trigger"`).
+- Higher-level composite components (e.g. `TabGroup`) wrap the lower-level primitives and accept a declarative `items` prop instead of requiring manual composition.
 - `Button` supports a `loading` prop that shows a spinner and disables interaction.
 - Page components export named functions (e.g. `export function LoginPage()`), not default exports.
 - Path alias `@/` maps to `src/`.

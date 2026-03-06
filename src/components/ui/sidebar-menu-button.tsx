@@ -31,7 +31,7 @@ const sidebarMenuButtonVariants = cva(
 )
 
 const stateClasses =
-  "hover:bg-sidebar-accent hover:text-sidebar-accent-foreground data-[active=true]:bg-sidebar data-[active=true]:border data-[active=true]:border-border data-[active=true]:shadow-xs focus-visible:bg-sidebar focus-visible:shadow-focus"
+  "hover:bg-input hover:text-sidebar-accent-foreground data-[active=true]:bg-sidebar data-[active=true]:border data-[active=true]:border-border data-[active=true]:shadow-xs focus-visible:bg-sidebar focus-visible:shadow-focus"
 
 function SidebarMenuButton({
   className,
