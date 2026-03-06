@@ -86,7 +86,7 @@ function SidebarMenuButton({
           {mediaAsset}
           {!collapsed && (
             <div className="flex flex-1 flex-col items-start justify-center gap-0.5 min-w-0">
-              <span className="w-full truncate text-sm font-semibold leading-none">
+              <span className="w-full truncate text-sm font-semibold leading-none text-left">
                 {children}
               </span>
             </div>
