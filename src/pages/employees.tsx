@@ -1,5 +1,5 @@
 import { useState, useMemo } from "react"
-import { CalendarClock, ListCheck, ListX, Search } from "lucide-react"
+import { Users, UserPlus, UserSearch, Search } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import { Separator } from "@/components/ui/separator"
@@ -8,51 +8,47 @@ import { DataTableHeaderCell } from "@/components/ui/data-table-header-cell"
 import { Empty } from "@/components/ui/empty"
 import { Input } from "@/components/ui/input"
 import { BreadcrumbItem } from "@/components/ui/breadcrumb-item"
-import type { TimeOffRequest, TimeOffStatus } from "@/types/time-off-request"
+import type { Profile } from "@/contexts/auth-context"
+import type { EmployeeStatus } from "@/types/employee"
 
-type TabValue = "all" | TimeOffStatus
+type TabValue = EmployeeStatus
 
-export function RequestsPage() {
-  const [activeTab, setActiveTab] = useState<TabValue>("all")
+export function EmployeesPage() {
+  const [activeTab, setActiveTab] = useState<TabValue>("active")
   const [searchQuery, setSearchQuery] = useState("")
 
   // Will be populated by Supabase fetching later
-  const requests: TimeOffRequest[] = []
+  const employees: Profile[] = []
 
   const counts = useMemo(() => {
     return {
-      all: requests.length,
-      pending: requests.filter((r) => r.status === "pending").length,
-      approved: requests.filter((r) => r.status === "approved").length,
-      rejected: requests.filter((r) => r.status === "rejected").length,
+      active: employees.filter((e) => e.status === "active").length,
+      inactive: employees.filter((e) => e.status === "inactive").length,
+      deleted: employees.filter((e) => e.status === "deleted").length,
     }
-  }, [requests])
+  }, [employees])
 
-  const filteredRequests = useMemo(() => {
-    let result = requests
-    if (activeTab !== "all") {
-      result = result.filter((r) => r.status === activeTab)
-    }
+  const filteredEmployees = useMemo(() => {
+    let result = employees.filter((e) => e.status === activeTab)
     if (searchQuery.trim()) {
       const q = searchQuery.toLowerCase()
       result = result.filter(
-        (r) =>
-          r.employee_name.toLowerCase().includes(q) ||
-          r.employee_email.toLowerCase().includes(q)
+        (e) =>
+          (e.full_name?.toLowerCase().includes(q) ?? false) ||
+          e.email.toLowerCase().includes(q)
       )
     }
     return result
-  }, [requests, activeTab, searchQuery])
+  }, [employees, activeTab, searchQuery])
 
   const tabItems = [
-    { value: "all", label: "All requests", badge: counts.all || undefined },
-    { value: "pending", label: "Pending", badge: counts.pending || undefined },
-    { value: "approved", label: "Approved", badge: counts.approved || undefined },
-    { value: "rejected", label: "Rejected", badge: counts.rejected || undefined },
+    { value: "active", label: "Active", badge: counts.active || undefined },
+    { value: "inactive", label: "Inactive", badge: counts.inactive || undefined },
+    { value: "deleted", label: "Deleted", badge: counts.deleted || undefined },
   ]
 
-  function handleCreateRecord() {
-    // TODO: open create time-off record modal
+  function handleAddEmployee() {
+    // TODO: open add employee modal
   }
 
   return (
@@ -60,19 +56,16 @@ export function RequestsPage() {
       {/* Header */}
       <div className="flex items-center gap-2 border-b border-border px-4 py-3">
         <button className="flex items-center justify-center size-7 rounded-[10px] shrink-0 text-foreground hover:bg-accent transition-colors">
-          <ListCheck className="size-4" />
+          <Users className="size-4" />
         </button>
         <div className="flex items-center h-6 pr-2 relative shrink-0">
           <Separator orientation="vertical" />
         </div>
-        <BreadcrumbItem text="Requests" className="flex-1 text-foreground font-medium" />
-        <div className="flex items-center gap-3">
-          <Button variant="secondary">Download report</Button>
-          <Button onClick={handleCreateRecord}>
-            <CalendarClock />
-            Create time-off record
-          </Button>
-        </div>
+        <BreadcrumbItem text="Employees" className="flex-1 text-foreground font-medium" />
+        <Button onClick={handleAddEmployee}>
+          <UserPlus />
+          Add employee
+        </Button>
       </div>
 
       {/* Body */}
@@ -87,7 +80,7 @@ export function RequestsPage() {
           <div className="relative w-[280px]">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground pointer-events-none" />
             <Input
-              placeholder="Search for requests..."
+              placeholder="Search for employees..."
               className="pl-9"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
@@ -101,26 +94,27 @@ export function RequestsPage() {
           <div className="flex bg-secondary">
             <DataTableHeaderCell type="checkbox" className="w-10" />
             <DataTableHeaderCell type="text" label="Employee" className="flex-1" />
-            <DataTableHeaderCell type="text" label="Period" className="w-[200px]" />
-            <DataTableHeaderCell type="text" label="Request type" className="w-[150px]" />
-            <DataTableHeaderCell type="text" label="Comment" className="flex-1" />
-            <DataTableHeaderCell type="text" label="Status" className="w-[110px]" />
-            <div className="w-24" />
+            <DataTableHeaderCell type="text" label="Email" className="w-[220px]" />
+            <DataTableHeaderCell type="text" label="Department" className="w-[180px]" />
+            <DataTableHeaderCell type="text" label="Role" className="w-[100px]" />
+            <DataTableHeaderCell type="text" label="Location" className="w-[160px]" />
+            <DataTableHeaderCell type="text" label="Hire date" className="w-[120px]" />
+            <div className="w-[56px]" />
           </div>
 
           {/* Body */}
-          {filteredRequests.length === 0 ? (
+          {filteredEmployees.length === 0 ? (
             <div className="flex items-center justify-center py-16">
               <Empty
-                media={{ type: "icon", icon: ListX }}
-                title="No requests yet"
-                description="It looks like your team is hard at work. This is where you'll see and manage all time-off requests once they arrive"
+                media={{ type: "icon", icon: UserSearch }}
+                title="No employees added yet"
+                description="Start building your team to manage their time off, balances, and accrual rules"
                 content={{
                   layout: "single",
                   primaryAction: {
-                    label: "Create time-off record",
-                    icon: CalendarClock,
-                    onClick: handleCreateRecord,
+                    label: "Add employee",
+                    icon: UserPlus,
+                    onClick: handleAddEmployee,
                   },
                 }}
               />

@@ -2,6 +2,7 @@ import { createContext, useContext, useEffect, useState, type ReactNode } from "
 import type { User, Session } from "@supabase/supabase-js"
 import { supabase } from "@/lib/supabase"
 import { runFounderFlow } from "@/lib/founder-flow"
+import type { EmployeeStatus } from "@/types/employee"
 
 interface Workspace {
   id: string
@@ -10,13 +11,17 @@ interface Workspace {
   created_at: string
 }
 
-interface Profile {
+export interface Profile {
   id: string
   workspace_id: string
   role: string
   email: string
   full_name?: string
   avatar_url?: string
+  status: EmployeeStatus
+  department?: string
+  location?: string
+  hire_date?: string
   created_at: string
 }
 
@@ -46,6 +51,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       .single()
 
     if (profileData) {
+      if (profileData.status === "deleted") {
+        await signOut()
+        return
+      }
+
       setProfile(profileData)
       const { data: workspaceData } = await supabase
         .from("workspaces")

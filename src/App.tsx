@@ -5,6 +5,8 @@ import { DashboardLayout } from "@/components/layout/DashboardLayout"
 import { LoginPage } from "@/pages/login"
 import { CheckEmailPage } from "@/pages/otp-verification"
 import { RequestsPage } from "@/pages/requests"
+import { EmployeesPage } from "@/pages/employees"
+import { AccessRestrictedPage } from "@/pages/access-restricted"
 
 export default function App() {
   return (
@@ -13,6 +15,7 @@ export default function App() {
         <Routes>
           <Route path="/login" element={<LoginPage />} />
           <Route path="/check-email" element={<CheckEmailPage />} />
+          <Route path="/access-restricted" element={<AccessRestrictedPage />} />
           <Route
             path="/dashboard"
             element={
@@ -23,7 +26,7 @@ export default function App() {
           >
             <Route index element={<Navigate to="requests" replace />} />
             <Route path="requests" element={<RequestsPage />} />
-            <Route path="employees" element={<div className="p-8">Employees</div>} />
+            <Route path="employees" element={<EmployeesPage />} />
             <Route path="calendar" element={<div className="p-8">Calendar</div>} />
             <Route path="time-off-setup" element={<div className="p-8">Time-off setup</div>} />
             <Route path="settings" element={<div className="p-8">Settings</div>} />

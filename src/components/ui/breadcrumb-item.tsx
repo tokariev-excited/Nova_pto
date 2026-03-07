@@ -21,7 +21,7 @@ export function BreadcrumbItem({
       data-type={type}
       className={cn(
         "inline-flex items-center font-sans text-sm font-normal leading-5 tracking-[-0.28px] whitespace-nowrap",
-        "text-muted-foreground hover:text-foreground transition-colors cursor-pointer",
+        "text-muted-foreground hover:text-foreground hover:font-medium transition-colors cursor-pointer",
         type === "dropdown" && "gap-1.5",
         type === "ellipsis" && "justify-center p-0.5",
         className

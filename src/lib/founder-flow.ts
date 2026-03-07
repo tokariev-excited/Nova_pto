@@ -30,6 +30,7 @@ export async function runFounderFlow(userId: string, email: string) {
       workspace_id: workspace.id,
       role: "admin",
       email,
+      status: "active",
     })
 
   if (profileError) {
