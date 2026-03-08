@@ -31,25 +31,36 @@ VITE_SUPABASE_ANON_KEY=...
 
 - `src/App.tsx` — router root. All routes wrapped in `AuthProvider`. `/dashboard` is behind `ProtectedRoute`. Dashboard uses nested routes via `<Outlet />` in `DashboardLayout`.
 - **Auth sequence**: `/login` (enter email) → Supabase sends OTP → `/check-email` (enter 6-digit code) → verify → redirect to `/dashboard`.
-- `src/contexts/auth-context.tsx` — central auth state. Exposes `user`, `session`, `workspace`, `profile`, `loading`, `signOut`. On first sign-in (`SIGNED_IN` event), runs `runFounderFlow` to auto-provision a workspace and profile for new users.
+- `src/contexts/auth-context.tsx` — central auth state. Exposes `user`, `session`, `workspace`, `profile`, `loading`, `signOut`, `refreshWorkspace`, `refreshProfile`. On first sign-in (`SIGNED_IN` event), runs `runFounderFlow` to auto-provision a workspace and profile for new users.
+- `src/contexts/navigation-guard-context.tsx` — provides `registerGuard`/`unregisterGuard` for pages with unsaved changes (e.g. Settings) to block navigation until confirmed.
 - `src/lib/founder-flow.ts` — first-time user setup: creates a `workspaces` row and a `profiles` row (role: `admin`) in Supabase. Idempotent — skips if profile already exists.
 - `src/lib/supabase.ts` — single shared Supabase client.
 
 ### Supabase schema (inferred)
 
 - `workspaces` — `id`, `name`, `logo_url?`, `created_at`
-- `profiles` — `id` (= auth user id), `workspace_id`, `role`, `email`, `full_name?`, `avatar_url?`, `created_at`
+- `profiles` — `id` (= auth user id), `workspace_id`, `role`, `email`, `full_name?`, `avatar_url?`, `status` (`EmployeeStatus`), `department_id?`, `location?`, `hire_date?`, `created_at`
+- `departments` — `id`, `workspace_id`, `name`, `created_at`
 - `time_off_requests` (inferred from types) — `id`, `profile_id`, `workspace_id`, `employee_name`, `employee_email`, `employee_avatar_url?`, `start_date`, `end_date`, `request_type`, `status`, `comment?`, `created_at`, `updated_at`
 
 ### Dashboard routes
 
 Defined in `src/App.tsx`. `/dashboard` redirects to `/dashboard/requests`. Currently implemented pages:
 - `requests` — `RequestsPage` (full UI, Supabase fetch pending)
-- `employees`, `calendar`, `time-off-setup`, `settings` — stub `<div>` placeholders
+- `employees` — `EmployeesPage` (full UI with tabs/search/table shell, Supabase fetch pending)
+- `settings` — `SettingsPage` (fully wired: workspace name/logo, profile name/avatar, departments CRUD, dirty-state guard, Supabase reads/writes)
+- `calendar`, `time-off-setup` — stub `<div>` placeholders
 
 ### Types
 
 - `src/types/time-off-request.ts` — `TimeOffRequest`, `TimeOffStatus` (`"pending" | "approved" | "rejected"`), `TimeOffType` (`"vacation" | "sick_leave" | "personal" | "bereavement" | "other"`)
+- `src/types/employee.ts` — `EmployeeStatus` (`"active" | "inactive" | "deleted"`)
+- `src/types/department.ts` — `Department` interface
+
+### Services
+
+- `src/lib/settings-service.ts` — Supabase calls for Settings page: `fetchDepartments`, `createDepartment`, `updateDepartment`, `deleteDepartment`, `updateWorkspace`, `updateProfile`, `uploadImage`, `removeImage`
+- `src/lib/employee-service.ts` — Supabase calls for Employees page (in progress)
 
 ### Layout structure
 
@@ -115,7 +126,7 @@ Custom tokens beyond shadcn defaults:
 
 ## Task Management
 
-1. **Plan First**: Write plan to `tasks/todo.md` with checkable items
+1. **Plan First**: Write plan to `tasks/todo.md` with checkable items (create the `tasks/` directory if it doesn't exist)
 2. **Verify Plan**: Check in before starting implementation
 3. **Track Progress**: Mark items complete as you go
 4. **Explain Changes**: High-level summary at each step
