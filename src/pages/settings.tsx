@@ -408,7 +408,7 @@ export function SettingsPage() {
                       onClick={() => logoInputRef.current?.click()}
                     >
                       <CloudUpload className="size-4" />
-                      Upload logo
+                      {hasLogo ? "Replace logo" : "Upload logo"}
                     </Button>
                     <Button
                       variant="secondary"
@@ -472,7 +472,7 @@ export function SettingsPage() {
                       onClick={() => avatarInputRef.current?.click()}
                     >
                       <CloudUpload className="size-4" />
-                      Upload photo
+                      {hasAvatar ? "Replace photo" : "Upload photo"}
                     </Button>
                     <Button
                       variant="secondary"
