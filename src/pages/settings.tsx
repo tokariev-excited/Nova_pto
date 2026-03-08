@@ -351,7 +351,7 @@ export function SettingsPage() {
   return (
     <div className="flex flex-col size-full">
       {/* Header */}
-      <div className="flex items-center gap-2 border-b border-border px-4 py-3">
+      <div className="flex items-center gap-2 border-b border-border px-4 h-[60px] shrink-0">
         <button className="flex items-center justify-center size-7 rounded-[10px] shrink-0 text-foreground hover:bg-accent transition-colors">
           <Settings className="size-4" />
         </button>
@@ -525,7 +525,7 @@ export function SettingsPage() {
                       size="icon-sm"
                       onClick={() => handleDeleteDepartment(dept.id, dept.isNew)}
                     >
-                      <Trash2 className="size-4" />
+                      <Trash2 className="size-4 text-error" />
                     </Button>
                   </div>
                 ))}
