@@ -29,7 +29,7 @@ function RadioGroupOption({
       data-slot="radio-group-option"
       className={cn(
         "group flex items-start cursor-pointer outline-none",
-        "disabled:opacity-50 disabled:pointer-events-none",
+        "disabled:opacity-50 disabled:cursor-not-allowed",
         variant === "card" && [
           "gap-2 px-4 py-3 rounded-[calc(var(--radius)-2px)] border border-border",
           "bg-secondary data-[state=checked]:bg-background data-[state=checked]:shadow-xs",

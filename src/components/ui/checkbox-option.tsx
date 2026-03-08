@@ -77,7 +77,7 @@ function CheckboxOption({
       data-slot="checkbox-option"
       className={cn(
         "flex cursor-pointer items-start gap-2",
-        disabled && "pointer-events-none opacity-50",
+        disabled && "cursor-not-allowed opacity-50",
         type === "card" && [
           "rounded-[var(--radius)] border p-4",
           destructive

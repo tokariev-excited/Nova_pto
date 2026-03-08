@@ -34,7 +34,7 @@ function ComboboxMenuItem({
       data-slot="combobox-menu-item"
       className={cn(
         "flex items-center gap-2 px-2 py-1.5 rounded-[6px]",
-        "cursor-default select-none",
+        "cursor-pointer select-none",
         "hover:bg-accent",
         className
       )}

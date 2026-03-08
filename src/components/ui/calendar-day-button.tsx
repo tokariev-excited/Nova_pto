@@ -3,7 +3,7 @@ import { cva, type VariantProps } from "class-variance-authority"
 import { cn } from "@/lib/utils"
 
 const calendarDayButtonVariants = cva(
-  "group relative flex flex-col items-center justify-center overflow-hidden rounded-[calc(var(--radius)-2px)] transition-colors focus-visible:outline-none focus-visible:shadow-focus disabled:pointer-events-none disabled:opacity-50",
+  "group relative flex flex-col items-center justify-center overflow-hidden rounded-[calc(var(--radius)-2px)] transition-colors cursor-pointer focus-visible:outline-none focus-visible:shadow-focus disabled:cursor-not-allowed disabled:opacity-50",
   {
     variants: {
       size: {

@@ -22,7 +22,7 @@ function SidebarMenuSubItem({
       data-slot="sidebar-menu-sub-item"
       data-active={isActive || undefined}
       className={cn(
-        "flex items-center gap-2 h-7 w-full p-2 rounded-md outline-none text-sm leading-none text-sidebar-foreground transition-colors [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4",
+        "flex items-center gap-2 h-7 w-full p-2 rounded-md outline-none cursor-pointer text-sm leading-none text-sidebar-foreground transition-colors [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4",
         "hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
         "data-[active=true]:bg-sidebar-accent data-[active=true]:font-medium",
         "focus-visible:bg-sidebar focus-visible:shadow-focus focus-visible:overflow-clip",

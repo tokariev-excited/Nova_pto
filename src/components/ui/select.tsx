@@ -35,7 +35,7 @@ function SelectTrigger({
         "data-[placeholder]:text-muted-foreground",
         "[&:not([data-placeholder])]:font-medium",
         "focus:border-focus focus:shadow-focus",
-        "disabled:pointer-events-none disabled:opacity-50",
+        "cursor-pointer disabled:cursor-not-allowed disabled:opacity-50",
         "aria-invalid:border-destructive aria-invalid:shadow-destructive-focus",
         "*:data-[slot=select-value]:line-clamp-1 *:data-[slot=select-value]:flex *:data-[slot=select-value]:items-center *:data-[slot=select-value]:gap-2",
         "[&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4",
@@ -114,9 +114,9 @@ function SelectItem({
     <SelectPrimitive.Item
       data-slot="select-item"
       className={cn(
-        "relative flex w-full cursor-default items-center gap-2 rounded-sm py-1.5 pr-8 pl-2 text-sm leading-5 tracking-tight outline-hidden select-none",
+        "relative flex w-full cursor-pointer items-center gap-2 rounded-sm py-1.5 pr-8 pl-2 text-sm leading-5 tracking-tight outline-hidden select-none",
         "focus:bg-accent focus:text-accent-foreground",
-        "data-[disabled]:pointer-events-none data-[disabled]:opacity-50",
+        "data-[disabled]:cursor-not-allowed data-[disabled]:opacity-50",
         "[&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4 [&_svg:not([class*='text-'])]:text-muted-foreground",
         "*:[span]:last:flex *:[span]:last:items-center *:[span]:last:gap-2",
         className

@@ -22,10 +22,10 @@ function SelectMenuItem({
     <SelectPrimitive.Item
       data-slot="select-menu-item"
       className={cn(
-        "flex w-full cursor-default items-center gap-2 rounded-sm px-2 py-1.5 outline-none select-none",
+        "flex w-full cursor-pointer items-center gap-2 rounded-sm px-2 py-1.5 outline-none select-none",
         "text-sm font-normal leading-5 tracking-[-0.28px] text-popover-foreground",
         "focus:bg-accent focus:text-accent-foreground",
-        "data-[disabled]:pointer-events-none data-[disabled]:opacity-50",
+        "data-[disabled]:cursor-not-allowed data-[disabled]:opacity-50",
         className
       )}
       {...props}

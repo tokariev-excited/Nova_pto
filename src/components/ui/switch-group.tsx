@@ -35,7 +35,7 @@ function SwitchGroup({
       className={cn(
         "flex items-start gap-3",
         orientation === "right" && "flex-row-reverse",
-        disabled && "opacity-50 pointer-events-none",
+        disabled && "opacity-50 cursor-not-allowed",
         variant === "card" && [
           "p-4 rounded-lg border border-border",
           "has-[[data-state=checked]]:bg-primary/5 has-[[data-state=checked]]:border-primary",
@@ -57,7 +57,7 @@ function SwitchGroup({
               htmlFor={id}
               className={cn(
                 "pt-1 text-sm font-medium leading-none text-foreground",
-                disabled ? "pointer-events-none" : "cursor-pointer"
+                disabled ? "cursor-not-allowed" : "cursor-pointer"
               )}
             >
               {label}

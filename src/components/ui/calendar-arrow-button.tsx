@@ -18,13 +18,13 @@ function CalendarArrowButton({
       data-slot="calendar-arrow-button"
       className={cn(
         // Base — size, layout, default radius (Enabled/Disabled = 10px)
-        "inline-flex size-8 shrink-0 items-center justify-center rounded-[calc(var(--radius)-2px)] transition-colors outline-none",
+        "inline-flex size-8 shrink-0 items-center justify-center rounded-[calc(var(--radius)-2px)] transition-colors outline-none cursor-pointer",
         // Hover — accent bg, tighter radius (8px)
         "hover:bg-accent hover:text-accent-foreground hover:rounded-[calc(var(--radius)-4px)]",
         // Focus — white bg, tighter radius, ring shadow
         "focus-visible:bg-background focus-visible:rounded-[calc(var(--radius)-4px)] focus-visible:shadow-focus",
         // Disabled — 50% opacity, no pointer events
-        "disabled:pointer-events-none disabled:opacity-50",
+        "disabled:cursor-not-allowed disabled:opacity-50",
         className
       )}
       {...props}

@@ -96,7 +96,7 @@ function OtpInput({
   const textAlign = alignment === "center" ? "text-center" : ""
 
   return (
-    <div className={cn("flex flex-col gap-1.5", disabled && "opacity-50 pointer-events-none", className)}>
+    <div className={cn("flex flex-col gap-1.5", disabled && "opacity-50 cursor-not-allowed", className)}>
       {label && (
         <span className={cn(
           "text-sm font-medium tracking-tight",

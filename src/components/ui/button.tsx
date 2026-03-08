@@ -6,7 +6,7 @@ import { LoaderCircle } from "lucide-react"
 import { cn } from "@/lib/utils"
 
 const buttonVariants = cva(
-  "inline-flex shrink-0 items-center justify-center gap-2 rounded-md font-medium tracking-tight whitespace-nowrap transition-all outline-none focus-visible:shadow-focus disabled:pointer-events-none disabled:opacity-50 aria-invalid:border-destructive aria-invalid:shadow-destructive-focus [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4",
+  "inline-flex shrink-0 items-center justify-center gap-2 rounded-md font-medium tracking-tight whitespace-nowrap transition-all outline-none cursor-pointer focus-visible:shadow-focus disabled:cursor-not-allowed disabled:opacity-50 aria-invalid:border-destructive aria-invalid:shadow-destructive-focus [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4",
   {
     variants: {
       variant: {
@@ -64,7 +64,7 @@ function Button({
       data-size={size}
       className={cn(
         buttonVariants({ variant, size, className }),
-        loading && "relative opacity-50 pointer-events-none"
+        loading && "relative opacity-50"
       )}
       disabled={disabled || loading}
       aria-busy={loading || undefined}

@@ -9,7 +9,7 @@ const sidebarMenuButtonVariants = cva(
   {
     variants: {
       type: {
-        simple: "gap-2 font-medium",
+        simple: "gap-2 font-medium cursor-pointer",
         "large-icon": "gap-2 cursor-default",
       },
       collapsed: {

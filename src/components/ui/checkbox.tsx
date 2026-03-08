@@ -13,8 +13,8 @@ function Checkbox({
       data-slot="checkbox"
       className={cn(
         "group size-4 shrink-0 rounded-[4px] border border-input bg-background shadow-2xs outline-none transition-[border-color,box-shadow]",
-        "focus-visible:border-focus focus-visible:shadow-focus",
-        "disabled:pointer-events-none disabled:opacity-50",
+        "cursor-pointer focus-visible:border-focus focus-visible:shadow-focus",
+        "disabled:cursor-not-allowed disabled:opacity-50",
         className
       )}
       {...props}

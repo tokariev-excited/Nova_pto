@@ -26,8 +26,8 @@ function RadioGroupItem({
       className={cn(
         "size-4 shrink-0 rounded-full border border-border bg-background shadow-xs outline-none transition-[background-color,border-color,box-shadow]",
         "data-[state=checked]:border-0 data-[state=checked]:bg-success",
-        "focus-visible:border-focus focus-visible:shadow-focus",
-        "disabled:pointer-events-none disabled:opacity-50",
+        "cursor-pointer focus-visible:border-focus focus-visible:shadow-focus",
+        "disabled:cursor-not-allowed disabled:opacity-50",
         className
       )}
       {...props}
