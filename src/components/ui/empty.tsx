@@ -3,7 +3,7 @@ import { cn } from "@/lib/utils"
 import { EmptyMedia, type EmptyMediaProps } from "@/components/ui/empty-media"
 import { EmptyContent, type EmptyContentProps } from "@/components/ui/empty-content"
 
-interface EmptyProps extends Omit<React.ComponentProps<"div">, "children"> {
+interface EmptyProps extends Omit<React.ComponentProps<"div">, "children" | "content"> {
   title?: string
   description?: string
   media?: EmptyMediaProps
@@ -14,7 +14,7 @@ function Empty({ title, description, media, content, className, ...props }: Empt
   return (
     <div
       data-slot="empty"
-      className={cn("flex flex-col gap-3 items-center", className)}
+      className={cn("flex flex-col gap-6 items-center", className)}
       {...props}
     >
       {(media || title || description) && (

@@ -7,6 +7,7 @@ import { CheckEmailPage } from "@/pages/otp-verification"
 import { RequestsPage } from "@/pages/requests"
 import { EmployeesPage } from "@/pages/employees"
 import { AccessRestrictedPage } from "@/pages/access-restricted"
+import { SettingsPage } from "@/pages/settings"
 
 export default function App() {
   return (
@@ -29,7 +30,7 @@ export default function App() {
             <Route path="employees" element={<EmployeesPage />} />
             <Route path="calendar" element={<div className="p-8">Calendar</div>} />
             <Route path="time-off-setup" element={<div className="p-8">Time-off setup</div>} />
-            <Route path="settings" element={<div className="p-8">Settings</div>} />
+            <Route path="settings" element={<SettingsPage />} />
           </Route>
           <Route path="*" element={<Navigate to="/dashboard" replace />} />
         </Routes>

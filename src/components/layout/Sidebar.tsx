@@ -8,6 +8,7 @@ import {
   LogOut,
 } from "lucide-react"
 import { useAuth } from "@/contexts/auth-context"
+import { useNavigationGuard } from "@/contexts/navigation-guard-context"
 import { NovaLogo } from "@/components/nova-logo"
 import { SidebarGroup } from "@/components/ui/sidebar-group"
 import { SidebarMenuItem } from "@/components/ui/sidebar-menu-item"
@@ -24,6 +25,7 @@ const navItems = [
 
 export function Sidebar() {
   const { user, workspace, profile, signOut } = useAuth()
+  const { canNavigate } = useNavigationGuard()
   const navigate = useNavigate()
   const location = useLocation()
 
@@ -32,12 +34,24 @@ export function Sidebar() {
   const email = user?.email ?? ""
   const initials = displayName === "You" ? "Y" : displayName.charAt(0).toUpperCase()
 
+  function handleNavigate(path: string) {
+    if (location.pathname === path) return
+    if (!canNavigate()) return
+    navigate(path)
+  }
+
+  const workspaceLogo = workspace?.logo_url ? (
+    <Avatar size="sm" shape="square" src={workspace.logo_url} alt={workspaceName} />
+  ) : (
+    <NovaLogo size={32} />
+  )
+
   return (
     <aside className="flex h-full w-[260px] shrink-0 flex-col">
       {/* Header */}
       <SidebarGroup>
         <SidebarMenuItem>
-          <SidebarMenuButton type="large-icon" mediaAsset={<NovaLogo size={32} />}>
+          <SidebarMenuButton type="large-icon" mediaAsset={workspaceLogo}>
             {workspaceName}
           </SidebarMenuButton>
         </SidebarMenuItem>
@@ -51,7 +65,7 @@ export function Sidebar() {
               type="simple"
               icon={<item.icon className="size-4" />}
               isActive={location.pathname.startsWith(item.path)}
-              onClick={() => navigate(item.path)}
+              onClick={() => handleNavigate(item.path)}
             >
               {item.label}
             </SidebarMenuButton>

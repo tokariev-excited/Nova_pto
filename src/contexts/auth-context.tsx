@@ -19,7 +19,7 @@ export interface Profile {
   full_name?: string
   avatar_url?: string
   status: EmployeeStatus
-  department?: string
+  department_id?: string | null
   location?: string
   hire_date?: string
   created_at: string
@@ -32,6 +32,8 @@ interface AuthContextType {
   profile: Profile | null
   loading: boolean
   signOut: () => Promise<void>
+  refreshWorkspace: () => Promise<void>
+  refreshProfile: () => Promise<void>
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
@@ -44,36 +46,66 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true)
 
   async function fetchProfileAndWorkspace(userId: string) {
-    const { data: profileData } = await supabase
+    let { data: profileData, error: profileError } = await supabase
       .from("profiles")
       .select("*")
       .eq("id", userId)
+      .maybeSingle()
+
+    if (profileError) {
+      console.error("[Auth] Failed to fetch profile:", profileError.message, profileError)
+      return
+    }
+
+    // Recovery: profile missing (founder flow previously failed due to RLS bug)
+    if (!profileData) {
+      const currentUser = user ?? (await supabase.auth.getUser()).data.user
+      if (currentUser) {
+        try {
+          await runFounderFlow(currentUser.id, currentUser.email ?? "")
+        } catch { /* logged in founder flow */ }
+        const { data } = await supabase
+          .from("profiles")
+          .select("*")
+          .eq("id", userId)
+          .maybeSingle()
+        profileData = data
+      }
+    }
+
+    if (!profileData) return
+
+    if (profileData.status === "deleted") {
+      await signOut()
+      return
+    }
+
+    setProfile(profileData)
+
+    const { data: workspaceData, error: wsError } = await supabase
+      .from("workspaces")
+      .select("*")
+      .eq("id", profileData.workspace_id)
       .single()
 
-    if (profileData) {
-      if (profileData.status === "deleted") {
-        await signOut()
-        return
-      }
+    if (wsError) {
+      console.error("[Auth] Failed to fetch workspace:", wsError.message, wsError)
+      return
+    }
 
-      setProfile(profileData)
-      const { data: workspaceData } = await supabase
-        .from("workspaces")
-        .select("*")
-        .eq("id", profileData.workspace_id)
-        .single()
-
-      if (workspaceData) {
-        setWorkspace(workspaceData)
-      }
+    if (workspaceData) {
+      setWorkspace(workspaceData)
     }
   }
 
   useEffect(() => {
+    let initialFetchDone = false
+
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session)
       setUser(session?.user ?? null)
       if (session?.user) {
+        initialFetchDone = true
         fetchProfileAndWorkspace(session.user.id).finally(() => setLoading(false))
       } else {
         setLoading(false)
@@ -90,7 +122,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
               await runFounderFlow(session.user.id, session.user.email ?? '')
             } catch { /* non-blocking */ }
           }
-          fetchProfileAndWorkspace(session.user.id)
+          // Skip if getSession() already triggered the initial fetch
+          if (!initialFetchDone) {
+            fetchProfileAndWorkspace(session.user.id)
+          }
+          initialFetchDone = false // allow future auth changes to fetch
         } else {
           setProfile(null)
           setWorkspace(null)
@@ -101,6 +137,36 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return () => subscription.unsubscribe()
   }, [])
 
+  async function refreshWorkspace() {
+    const currentProfile = profile
+    if (!currentProfile) return
+    const { data, error } = await supabase
+      .from("workspaces")
+      .select("*")
+      .eq("id", currentProfile.workspace_id)
+      .single()
+    if (error) {
+      console.error("[Auth] Failed to refresh workspace:", error.message, error)
+      return
+    }
+    if (data) setWorkspace(data)
+  }
+
+  async function refreshProfile() {
+    const currentUser = user
+    if (!currentUser) return
+    const { data, error } = await supabase
+      .from("profiles")
+      .select("*")
+      .eq("id", currentUser.id)
+      .maybeSingle()
+    if (error) {
+      console.error("[Auth] Failed to refresh profile:", error.message, error)
+      return
+    }
+    if (data) setProfile(data)
+  }
+
   async function signOut() {
     await supabase.auth.signOut()
     setUser(null)
@@ -110,7 +176,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   return (
-    <AuthContext.Provider value={{ user, session, workspace, profile, loading, signOut }}>
+    <AuthContext.Provider value={{ user, session, workspace, profile, loading, signOut, refreshWorkspace, refreshProfile }}>
       {children}
     </AuthContext.Provider>
   )

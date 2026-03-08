@@ -45,6 +45,7 @@ function Button({
   size = "default",
   asChild = false,
   loading = false,
+  loadingText,
   children,
   disabled,
   ...props
@@ -52,6 +53,7 @@ function Button({
   VariantProps<typeof buttonVariants> & {
     asChild?: boolean
     loading?: boolean
+    loadingText?: string
   }) {
   const Comp = asChild ? Slot.Root : "button"
 
@@ -62,14 +64,29 @@ function Button({
       data-size={size}
       className={cn(
         buttonVariants({ variant, size, className }),
-        loading && "opacity-50 pointer-events-none"
+        loading && "relative opacity-50 pointer-events-none"
       )}
       disabled={disabled || loading}
       aria-busy={loading || undefined}
       {...props}
     >
-      {loading && <LoaderCircle className="size-4 animate-spin" />}
-      {children}
+      {loading && loadingText ? (
+        <>
+          <LoaderCircle className="size-4 animate-spin" />
+          {loadingText}
+        </>
+      ) : (
+        <>
+          {loading && (
+            <span className="absolute inset-0 flex items-center justify-center">
+              <LoaderCircle className="size-4 animate-spin" />
+            </span>
+          )}
+          <span className={cn("inline-flex items-center gap-2", loading && "invisible")}>
+            {children}
+          </span>
+        </>
+      )}
     </Comp>
   )
 }
