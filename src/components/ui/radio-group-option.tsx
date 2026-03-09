@@ -1,4 +1,5 @@
 import * as React from "react"
+
 import { RadioGroup as RadioGroupPrimitive } from "radix-ui"
 
 import { cn } from "@/lib/utils"
@@ -44,7 +45,7 @@ function RadioGroupOption({
       {/* Radio indicator */}
       <span
         className={cn(
-          "size-4 shrink-0 rounded-full border border-border bg-background shadow-xs",
+          "flex items-center justify-center size-4 shrink-0 rounded-full border border-border bg-background shadow-xs",
           "transition-[background-color,border-color,box-shadow]",
           "group-data-[state=checked]:border-0",
           error
@@ -60,7 +61,7 @@ function RadioGroupOption({
 
       {/* Content */}
       {(label || description) && (
-        <div className="flex min-w-0 flex-1 flex-col gap-1.5 pt-px">
+        <div className="flex min-w-0 flex-1 flex-col items-start text-left gap-1.5 pt-px">
           {label && (
             <span
               className={cn(

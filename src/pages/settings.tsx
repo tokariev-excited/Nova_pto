@@ -1,10 +1,11 @@
 import { useState, useEffect, useMemo, useRef, useCallback } from "react"
-import { Settings, Plus, Trash2, CloudUpload } from "lucide-react"
+import { Settings, Plus, Trash2, CloudUpload, User } from "lucide-react"
 
 import { useAuth } from "@/contexts/auth-context"
 import { useNavigationGuard } from "@/contexts/navigation-guard-context"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
+import { Field } from "@/components/ui/field"
 import { Separator } from "@/components/ui/separator"
 import { Avatar } from "@/components/ui/avatar"
 import { BreadcrumbItem } from "@/components/ui/breadcrumb-item"
@@ -18,6 +19,7 @@ import {
   uploadImage,
   removeImage,
 } from "@/lib/settings-service"
+import { getInitials } from "@/lib/utils"
 import type { Department } from "@/types/department"
 
 interface DepartmentRow {
@@ -28,7 +30,8 @@ interface DepartmentRow {
 
 interface InitialValues {
   workspaceName: string
-  fullName: string
+  firstName: string
+  lastName: string
   logoUrl: string | null
   avatarUrl: string | null
   departments: DepartmentRow[]
@@ -39,7 +42,8 @@ export function SettingsPage() {
   const { registerGuard, unregisterGuard } = useNavigationGuard()
 
   const [workspaceName, setWorkspaceName] = useState("")
-  const [fullName, setFullName] = useState("")
+  const [firstName, setFirstName] = useState("")
+  const [lastName, setLastName] = useState("")
   const [logoUrl, setLogoUrl] = useState<string | null>(null)
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null)
   const [logoFile, setLogoFile] = useState<File | null>(null)
@@ -61,12 +65,14 @@ export function SettingsPage() {
     if (!workspace || !profile) return
 
     const wName = workspace.name || ""
-    const fName = profile.full_name || ""
+    const fName = profile.first_name || ""
+    const lName = profile.last_name || ""
     const lUrl = workspace.logo_url || null
     const aUrl = profile.avatar_url || null
 
     setWorkspaceName(wName)
-    setFullName(fName)
+    setFirstName(fName)
+    setLastName(lName)
     setLogoUrl(lUrl)
     setAvatarUrl(aUrl)
 
@@ -84,12 +90,13 @@ export function SettingsPage() {
       setDepartments(rows)
       setInitialValues({
         workspaceName: wName,
-        fullName: fName,
+        firstName: fName,
+        lastName: lName,
         logoUrl: lUrl,
         avatarUrl: aUrl,
         departments: rows,
       })
-      console.log("[Settings] initialValues set:", { wName, fName, lUrl, aUrl, departments: rows })
+      console.log("[Settings] initialValues set:", { wName, fName, lName, lUrl, aUrl, departments: rows })
     }
 
     load()
@@ -103,7 +110,8 @@ export function SettingsPage() {
       return false
     }
     if (workspaceName !== initialValues.workspaceName) return true
-    if (fullName !== initialValues.fullName) return true
+    if (firstName !== initialValues.firstName) return true
+    if (lastName !== initialValues.lastName) return true
     // Image dirty: new file staged, OR removing an existing image
     if (logoFile !== null || (logoRemoved && initialValues.logoUrl !== null)) return true
     if (avatarFile !== null || (avatarRemoved && initialValues.avatarUrl !== null)) return true
@@ -117,7 +125,7 @@ export function SettingsPage() {
     }
     console.log("[Settings] isDirty: false (no changes detected)")
     return false
-  }, [workspaceName, fullName, logoFile, avatarFile, logoRemoved, avatarRemoved, departments, deletedDepartmentIds, initialValues])
+  }, [workspaceName, firstName, lastName, logoFile, avatarFile, logoRemoved, avatarRemoved, departments, deletedDepartmentIds, initialValues])
 
   // Navigation guard
   useEffect(() => {
@@ -227,7 +235,8 @@ export function SettingsPage() {
   function handleCancel() {
     if (!initialValues) return
     setWorkspaceName(initialValues.workspaceName)
-    setFullName(initialValues.fullName)
+    setFirstName(initialValues.firstName)
+    setLastName(initialValues.lastName)
     setLogoUrl(initialValues.logoUrl)
     setAvatarUrl(initialValues.avatarUrl)
     setLogoFile(null)
@@ -283,7 +292,8 @@ export function SettingsPage() {
 
       // 4. Update profile
       await updateProfile(profile.id, {
-        full_name: fullName,
+        first_name: firstName,
+        last_name: lastName,
         avatar_url: newAvatarUrl,
       })
 
@@ -328,7 +338,8 @@ export function SettingsPage() {
       setDeletedDepartmentIds([])
       setInitialValues({
         workspaceName,
-        fullName,
+        firstName,
+        lastName,
         logoUrl: newLogoUrl,
         avatarUrl: newAvatarUrl,
         departments: rows,
@@ -346,7 +357,11 @@ export function SettingsPage() {
   const displayedAvatar = avatarPreview ?? (avatarRemoved ? null : avatarUrl)
   const hasLogo = !!displayedLogo
   const hasAvatar = !!displayedAvatar
-  const nameInitial = fullName ? fullName.charAt(0).toUpperCase() : "Y"
+  const initials = getInitials(firstName, lastName)
+  const avatarFallback = useMemo(() => {
+    if (initials) return initials
+    return <User className="size-6 text-muted-foreground" />
+  }, [initials])
 
   return (
     <div className="flex flex-col size-full">
@@ -366,7 +381,7 @@ export function SettingsPage() {
         <div className="mx-auto w-full max-w-[600px] py-8 px-4 flex flex-col gap-8">
           {/* Title */}
           <div className="flex flex-col gap-1">
-            <h1 className="text-lg font-semibold leading-7 text-foreground">Settings</h1>
+            <h1 className="text-xl font-semibold leading-8 text-foreground">Settings</h1>
             <p className="text-sm leading-5 text-muted-foreground">
               Personalize how Nova looks for your entire team
             </p>
@@ -441,15 +456,21 @@ export function SettingsPage() {
             <h2 className="text-base font-semibold leading-6 text-foreground">Personal details</h2>
 
             {/* Your name */}
-            <div className="flex flex-col gap-2">
-              <label className="text-sm font-medium leading-5 text-foreground">
-                Your name
-              </label>
-              <Input
-                value={fullName}
-                onChange={(e) => setFullName(e.target.value)}
-                placeholder="Type your full name"
-              />
+            <div className="grid grid-cols-2 gap-3">
+              <Field label="First name">
+                <Input
+                  placeholder="First name"
+                  value={firstName}
+                  onChange={(e) => setFirstName(e.target.value)}
+                />
+              </Field>
+              <Field label="Last name">
+                <Input
+                  placeholder="Last name"
+                  value={lastName}
+                  onChange={(e) => setLastName(e.target.value)}
+                />
+              </Field>
             </div>
 
             {/* Your photo */}
@@ -462,7 +483,7 @@ export function SettingsPage() {
                   size="xl"
                   shape="square"
                   src={displayedAvatar ?? undefined}
-                  fallback={nameInitial}
+                  fallback={avatarFallback}
                 />
                 <div className="flex flex-col gap-2">
                   <div className="flex items-center gap-2">

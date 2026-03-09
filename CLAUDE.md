@@ -47,7 +47,8 @@ VITE_SUPABASE_ANON_KEY=...
 
 Defined in `src/App.tsx`. `/dashboard` redirects to `/dashboard/requests`. Currently implemented pages:
 - `requests` — `RequestsPage` (full UI, Supabase fetch pending)
-- `employees` — `EmployeesPage` (full UI with tabs/search/table shell, Supabase fetch pending)
+- `employees` — `EmployeesPage` (full UI with tabs/search/table shell, live Supabase data)
+- `employees/add` — `AddEmployeePage` (form: avatar upload, name, email, role, department, hire date, location; calls `inviteEmployee` from employee-service)
 - `settings` — `SettingsPage` (fully wired: workspace name/logo, profile name/avatar, departments CRUD, dirty-state guard, Supabase reads/writes)
 - `calendar`, `time-off-setup` — stub `<div>` placeholders
 
@@ -60,7 +61,11 @@ Defined in `src/App.tsx`. `/dashboard` redirects to `/dashboard/requests`. Curre
 ### Services
 
 - `src/lib/settings-service.ts` — Supabase calls for Settings page: `fetchDepartments`, `createDepartment`, `updateDepartment`, `deleteDepartment`, `updateWorkspace`, `updateProfile`, `uploadImage`, `removeImage`
-- `src/lib/employee-service.ts` — Supabase calls for Employees page (in progress)
+- `src/lib/employee-service.ts` — Supabase calls for Employees page: `fetchEmployees`, `inviteEmployee` (calls the `invite-employee` Edge Function)
+
+### Supabase Edge Functions
+
+- `supabase/functions/invite-employee/` — Deno function that verifies caller JWT, creates a Supabase auth user via admin API, and inserts a `profiles` row. Deploy with `supabase functions deploy invite-employee`.
 
 ### Layout structure
 

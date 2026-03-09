@@ -37,6 +37,28 @@ export async function fetchEmployees(
   return { data: data ?? [], count: count ?? 0 }
 }
 
+export interface InviteEmployeeData {
+  email: string
+  first_name?: string
+  last_name?: string
+  role?: string
+  department_id?: string | null
+  location?: string
+  hire_date?: string
+  avatar_url?: string | null
+}
+
+export async function inviteEmployee(data: InviteEmployeeData) {
+  const { data: result, error } = await supabase.functions.invoke(
+    "invite-employee",
+    { body: data }
+  )
+
+  if (error) throw error
+  if (result?.error) throw new Error(result.error)
+  return result.profile
+}
+
 export async function fetchEmployeeCounts(workspaceId: string) {
   const statuses: EmployeeStatus[] = ["active", "inactive", "deleted"]
   const counts: Record<EmployeeStatus, number> = { active: 0, inactive: 0, deleted: 0 }

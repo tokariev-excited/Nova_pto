@@ -8,6 +8,7 @@ import {
   LogOut,
 } from "lucide-react"
 import { useAuth } from "@/contexts/auth-context"
+import { getInitials, getDisplayName } from "@/lib/utils"
 import { useNavigationGuard } from "@/contexts/navigation-guard-context"
 import { NovaLogo } from "@/components/nova-logo"
 import { SidebarGroup } from "@/components/ui/sidebar-group"
@@ -30,9 +31,9 @@ export function Sidebar() {
   const location = useLocation()
 
   const workspaceName = workspace?.name || "Your workspace"
-  const displayName = profile?.full_name || "You"
+  const displayName = getDisplayName(profile?.first_name, profile?.last_name) || "You"
   const email = user?.email ?? ""
-  const initials = displayName === "You" ? "Y" : displayName.charAt(0).toUpperCase()
+  const initials = getInitials(profile?.first_name, profile?.last_name) ?? "Y"
 
   function handleNavigate(path: string) {
     if (location.pathname === path) return

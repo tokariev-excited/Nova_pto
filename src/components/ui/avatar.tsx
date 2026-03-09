@@ -50,7 +50,7 @@ interface AvatarProps
     VariantProps<typeof avatarVariants> {
   src?: string
   alt?: string
-  fallback?: string
+  fallback?: React.ReactNode
 }
 
 const fallbackTextClasses: Record<NonNullable<AvatarProps["size"]>, string> = {

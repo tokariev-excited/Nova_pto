@@ -8,6 +8,7 @@ interface Workspace {
   id: string
   name: string
   logo_url?: string
+  owner_id: string
   created_at: string
 }
 
@@ -16,7 +17,8 @@ export interface Profile {
   workspace_id: string
   role: string
   email: string
-  full_name?: string
+  first_name?: string
+  last_name?: string
   avatar_url?: string
   status: EmployeeStatus
   department_id?: string | null

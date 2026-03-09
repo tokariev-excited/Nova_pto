@@ -1,8 +1,8 @@
 import { supabase } from "@/lib/supabase"
 import type { Department } from "@/types/department"
 
-const ALLOWED_TYPES = ["image/png", "image/jpeg"]
-const MAX_SIZE = 2 * 1024 * 1024 // 2 MB
+export const ALLOWED_TYPES = ["image/png", "image/jpeg"]
+export const MAX_SIZE = 2 * 1024 * 1024 // 2 MB
 
 export async function updateWorkspace(
   workspaceId: string,
@@ -17,7 +17,7 @@ export async function updateWorkspace(
 
 export async function updateProfile(
   profileId: string,
-  data: { full_name?: string; avatar_url?: string | null }
+  data: { first_name?: string; last_name?: string; avatar_url?: string | null }
 ) {
   const { error } = await supabase
     .from("profiles")

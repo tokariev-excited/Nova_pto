@@ -18,7 +18,7 @@ export async function runFounderFlow(userId: string, email: string) {
   const workspaceId = crypto.randomUUID()
   const { error: wsError } = await supabase
     .from("workspaces")
-    .insert({ id: workspaceId, name: "My Workspace" })
+    .insert({ id: workspaceId, name: "My Workspace", owner_id: userId })
 
   if (wsError) {
     throw new Error(wsError.message)
