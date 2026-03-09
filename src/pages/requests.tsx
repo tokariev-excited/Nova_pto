@@ -105,7 +105,7 @@ export function RequestsPage() {
             <DataTableHeaderCell type="text" label="Request type" className="w-[150px]" />
             <DataTableHeaderCell type="text" label="Comment" className="flex-1" />
             <DataTableHeaderCell type="text" label="Status" className="w-[110px]" />
-            <div className="w-24" />
+            <DataTableHeaderCell type="text" className="w-24" />
           </div>
 
           {/* Body */}

@@ -190,7 +190,7 @@ export function EmployeesPage() {
               label="Hire date"
               className="w-[120px]"
             />
-            <div className="w-[56px]" />
+            <DataTableHeaderCell type="text" className="w-[56px]" />
           </div>
 
           {/* Body */}
