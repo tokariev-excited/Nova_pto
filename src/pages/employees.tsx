@@ -1,6 +1,16 @@
 import { useState, useEffect, useMemo, useCallback } from "react"
 import { useNavigate } from "react-router-dom"
-import { Users, UserPlus, UserSearch, Search } from "lucide-react"
+import {
+  Users,
+  UserPlus,
+  UserSearch,
+  Search,
+  PencilLine,
+  UserMinus,
+  UserCheck,
+  Trash2,
+  EllipsisIcon,
+} from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import { Separator } from "@/components/ui/separator"
@@ -11,10 +21,31 @@ import { Badge } from "@/components/ui/badge"
 import { Empty } from "@/components/ui/empty"
 import { Input } from "@/components/ui/input"
 import { BreadcrumbItem } from "@/components/ui/breadcrumb-item"
+import {
+  Popover,
+  PopoverTrigger,
+  PopoverContent,
+} from "@/components/ui/popover"
+import { ComboboxMenu } from "@/components/ui/combobox-menu"
+import {
+  AlertDialog,
+  AlertDialogContent,
+  AlertDialogHeader,
+  AlertDialogFooter,
+  AlertDialogTitle,
+  AlertDialogDescription,
+  AlertDialogCancel,
+  AlertDialogAction,
+} from "@/components/ui/alert-dialog"
 import { useAuth, type Profile } from "@/contexts/auth-context"
-import { fetchEmployees, fetchEmployeeCounts } from "@/lib/employee-service"
+import {
+  fetchEmployees,
+  fetchEmployeeCounts,
+  updateEmployeeStatus,
+} from "@/lib/employee-service"
 import { fetchDepartments } from "@/lib/settings-service"
 import { getInitials, getDisplayName } from "@/lib/utils"
+import { addToast } from "@/lib/toast"
 import type { EmployeeStatus } from "@/types/employee"
 import type { Department } from "@/types/department"
 
@@ -31,7 +62,7 @@ function formatDate(dateStr?: string) {
 
 export function EmployeesPage() {
   const navigate = useNavigate()
-  const { workspace } = useAuth()
+  const { workspace, profile: currentProfile } = useAuth()
 
   const [activeTab, setActiveTab] = useState<TabValue>("active")
   const [searchQuery, setSearchQuery] = useState("")
@@ -43,6 +74,12 @@ export function EmployeesPage() {
   })
   const [departments, setDepartments] = useState<Department[]>([])
   const [loading, setLoading] = useState(true)
+
+  // Dropdown state
+  const [openPopoverId, setOpenPopoverId] = useState<string | null>(null)
+
+  // Delete dialog state
+  const [deleteTarget, setDeleteTarget] = useState<Profile | null>(null)
 
   const departmentMap = useMemo(() => {
     const map = new Map<string, string>()
@@ -91,28 +128,87 @@ export function EmployeesPage() {
     loadEmployees(activeTab)
   }, [activeTab, loadEmployees])
 
+  // Filter out workspace owner and apply search
   const filteredEmployees = useMemo(() => {
-    if (!searchQuery.trim()) return employees
+    let list = employees
+    if (currentProfile) {
+      list = list.filter((e) => e.id !== currentProfile.id)
+    }
+    if (!searchQuery.trim()) return list
     const q = searchQuery.toLowerCase()
-    return employees.filter(
+    return list.filter(
       (e) =>
         getDisplayName(e.first_name, e.last_name).toLowerCase().includes(q) ||
         e.email.toLowerCase().includes(q)
     )
-  }, [employees, searchQuery])
+  }, [employees, searchQuery, currentProfile])
+
+  // Adjust counts to exclude workspace owner
+  const adjustedCounts = useMemo(() => {
+    if (!currentProfile) return counts
+    const adjusted = { ...counts }
+    if (adjusted[currentProfile.status] > 0) {
+      adjusted[currentProfile.status] -= 1
+    }
+    return adjusted
+  }, [counts, currentProfile])
 
   const tabItems = [
-    { value: "active", label: "Active", badge: counts.active || undefined },
+    { value: "active", label: "Active", badge: adjustedCounts.active || undefined },
     {
       value: "inactive",
       label: "Inactive",
-      badge: counts.inactive || undefined,
+      badge: adjustedCounts.inactive || undefined,
     },
-    { value: "deleted", label: "Deleted", badge: counts.deleted || undefined },
+    { value: "deleted", label: "Deleted", badge: adjustedCounts.deleted || undefined },
   ]
 
   function handleAddEmployee() {
     navigate("/dashboard/employees/new")
+  }
+
+  async function handleDeactivate(emp: Profile) {
+    try {
+      await updateEmployeeStatus(emp.id, "inactive")
+      addToast({
+        title: "Employee deactivated",
+        description: `${getDisplayName(emp.first_name, emp.last_name) || emp.email} has been deactivated`,
+      })
+      loadEmployees(activeTab)
+      loadCounts()
+    } catch (err) {
+      console.error("Failed to deactivate employee:", err)
+    }
+  }
+
+  async function handleActivate(emp: Profile) {
+    try {
+      await updateEmployeeStatus(emp.id, "active")
+      addToast({
+        title: "Employee activated",
+        description: `${getDisplayName(emp.first_name, emp.last_name) || emp.email} is now back in the Active list`,
+      })
+      loadEmployees(activeTab)
+      loadCounts()
+    } catch (err) {
+      console.error("Failed to activate employee:", err)
+    }
+  }
+
+  async function handleDeleteConfirm() {
+    if (!deleteTarget) return
+    try {
+      await updateEmployeeStatus(deleteTarget.id, "deleted")
+      addToast({
+        title: "Employee deleted",
+        description: `${getDisplayName(deleteTarget.first_name, deleteTarget.last_name) || deleteTarget.email} has been deleted`,
+      })
+      setDeleteTarget(null)
+      loadEmployees(activeTab)
+      loadCounts()
+    } catch (err) {
+      console.error("Failed to delete employee:", err)
+    }
   }
 
   return (
@@ -168,7 +264,7 @@ export function EmployeesPage() {
             <DataTableHeaderCell
               type="text"
               label="Email"
-              className="w-[220px]"
+              className="w-[260px]"
             />
             <DataTableHeaderCell
               type="text"
@@ -229,27 +325,48 @@ export function EmployeesPage() {
           ) : (
             <div>
               {filteredEmployees.map((emp) => (
-                <div key={emp.id} className="flex">
+                <div
+                  key={emp.id}
+                  className={`flex${emp.status === "active" ? " cursor-pointer" : ""}`}
+                  onClick={() => {
+                    if (emp.status === "active") {
+                      navigate(`/dashboard/employees/${emp.id}/edit`)
+                    }
+                  }}
+                >
+                  <div onClick={(e) => e.stopPropagation()}>
+                    <DataTableCell
+                      type="checkbox"
+                      size="md"
+                      className="w-10"
+                    />
+                  </div>
                   <DataTableCell
-                    type="checkbox"
-                    className="w-10"
-                  />
-                  <DataTableCell
-                    type="avatar-description"
+                    type="avatar"
+                    size="md"
                     className="flex-1"
                     avatarSrc={emp.avatar_url ?? undefined}
-                    avatarAlt={getDisplayName(emp.first_name, emp.last_name) || emp.email}
-                    avatarFallback={getInitials(emp.first_name, emp.last_name)}
-                    label={getDisplayName(emp.first_name, emp.last_name) || "—"}
-                    description={emp.email}
+                    avatarAlt={
+                      getDisplayName(emp.first_name, emp.last_name) ||
+                      emp.email
+                    }
+                    avatarFallback={getInitials(
+                      emp.first_name,
+                      emp.last_name
+                    )}
+                    label={
+                      getDisplayName(emp.first_name, emp.last_name) || "—"
+                    }
                   />
                   <DataTableCell
                     type="text"
-                    className="w-[220px]"
+                    size="md"
+                    className="w-[260px]"
                     label={emp.email}
                   />
                   <DataTableCell
                     type="text"
+                    size="md"
                     className="w-[180px]"
                     label={
                       emp.department_id
@@ -259,6 +376,7 @@ export function EmployeesPage() {
                   />
                   <DataTableCell
                     type="badge"
+                    size="md"
                     className="w-[100px]"
                     badgeNode={
                       <Badge variant="secondary">
@@ -268,24 +386,162 @@ export function EmployeesPage() {
                   />
                   <DataTableCell
                     type="text"
+                    size="md"
                     className="w-[160px]"
                     label={emp.location ?? "—"}
                   />
                   <DataTableCell
                     type="text"
+                    size="md"
                     className="w-[120px]"
                     label={formatDate(emp.hire_date)}
                   />
-                  <DataTableCell
-                    type="ellipsis"
-                    className="w-[56px]"
-                  />
+                  <div
+                    className="relative flex items-center justify-center w-[56px] h-[72px] px-3 py-2 hover:bg-muted/50"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    <Popover
+                      open={openPopoverId === emp.id}
+                      onOpenChange={(open) =>
+                        setOpenPopoverId(open ? emp.id : null)
+                      }
+                    >
+                      <PopoverTrigger asChild>
+                        <Button variant="ghost" size="icon-sm">
+                          <EllipsisIcon className="size-4" />
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent
+                        align="end"
+                        className="p-0 border-0 shadow-none"
+                      >
+                        <ComboboxMenu
+                          groups={
+                            emp.status === "active"
+                              ? [
+                                  {
+                                    items: [
+                                      {
+                                        type: "icon",
+                                        icon: (
+                                          <PencilLine className="size-4" />
+                                        ),
+                                        label: "Edit details",
+                                        onClick: () => {
+                                          setOpenPopoverId(null)
+                                          navigate(
+                                            `/dashboard/employees/${emp.id}/edit`
+                                          )
+                                        },
+                                      },
+                                      {
+                                        type: "icon",
+                                        icon: (
+                                          <UserMinus className="size-4" />
+                                        ),
+                                        label: "Deactivate",
+                                        onClick: () => {
+                                          setOpenPopoverId(null)
+                                          handleDeactivate(emp)
+                                        },
+                                      },
+                                    ],
+                                  },
+                                  {
+                                    items: [
+                                      {
+                                        type: "icon",
+                                        variant: "destructive",
+                                        icon: (
+                                          <Trash2 className="size-4" />
+                                        ),
+                                        label: "Delete employee",
+                                        onClick: () => {
+                                          setOpenPopoverId(null)
+                                          setDeleteTarget(emp)
+                                        },
+                                      },
+                                    ],
+                                  },
+                                ]
+                              : [
+                                  {
+                                    items: [
+                                      {
+                                        type: "icon",
+                                        icon: (
+                                          <UserCheck className="size-4" />
+                                        ),
+                                        label: "Activate",
+                                        onClick: () => {
+                                          setOpenPopoverId(null)
+                                          handleActivate(emp)
+                                        },
+                                      },
+                                    ],
+                                  },
+                                  {
+                                    items: [
+                                      {
+                                        type: "icon",
+                                        variant: "destructive",
+                                        icon: (
+                                          <Trash2 className="size-4" />
+                                        ),
+                                        label: "Delete employee",
+                                        onClick: () => {
+                                          setOpenPopoverId(null)
+                                          setDeleteTarget(emp)
+                                        },
+                                      },
+                                    ],
+                                  },
+                                ]
+                          }
+                        />
+                      </PopoverContent>
+                    </Popover>
+                    <div className="absolute bottom-0 left-0 right-0 border-b border-border" />
+                  </div>
                 </div>
               ))}
             </div>
           )}
         </div>
       </div>
+
+      {/* Delete confirmation dialog */}
+      <AlertDialog
+        open={!!deleteTarget}
+        onOpenChange={(open) => {
+          if (!open) setDeleteTarget(null)
+        }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete employee</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete{" "}
+              {deleteTarget
+                ? getDisplayName(
+                    deleteTarget.first_name,
+                    deleteTarget.last_name
+                  ) || deleteTarget.email
+                : ""}
+              ? This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              onClick={handleDeleteConfirm}
+            >
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   )
 }

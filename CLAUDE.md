@@ -39,16 +39,18 @@ VITE_SUPABASE_ANON_KEY=...
 ### Supabase schema (inferred)
 
 - `workspaces` — `id`, `name`, `logo_url?`, `created_at`
-- `profiles` — `id` (= auth user id), `workspace_id`, `role`, `email`, `full_name?`, `avatar_url?`, `status` (`EmployeeStatus`), `department_id?`, `location?`, `hire_date?`, `created_at`
+- `profiles` — `id` (= auth user id), `workspace_id`, `role`, `email`, `first_name?`, `last_name?`, `avatar_url?`, `status` (`EmployeeStatus`), `department_id?`, `location?`, `hire_date?`, `created_at`
 - `departments` — `id`, `workspace_id`, `name`, `created_at`
 - `time_off_requests` (inferred from types) — `id`, `profile_id`, `workspace_id`, `employee_name`, `employee_email`, `employee_avatar_url?`, `start_date`, `end_date`, `request_type`, `status`, `comment?`, `created_at`, `updated_at`
 
+Migrations live in `supabase/migrations/`. Run `supabase db push` to apply them to a local/remote instance.
+
 ### Dashboard routes
 
-Defined in `src/App.tsx`. `/dashboard` redirects to `/dashboard/requests`. Currently implemented pages:
+Defined in `src/App.tsx`. All page components are lazy-loaded via `React.lazy` + `Suspense`. `/dashboard` redirects to `/dashboard/requests`. Currently implemented pages:
 - `requests` — `RequestsPage` (full UI, Supabase fetch pending)
-- `employees` — `EmployeesPage` (full UI with tabs/search/table shell, live Supabase data)
-- `employees/add` — `AddEmployeePage` (form: avatar upload, name, email, role, department, hire date, location; calls `inviteEmployee` from employee-service)
+- `employees` — `EmployeesPage` (full UI with tabs/search/table, live Supabase data)
+- `employees/new` — `AddEmployeePage` (form: avatar upload, name, email, role, department, hire date, location; calls `inviteEmployee` from employee-service)
 - `settings` — `SettingsPage` (fully wired: workspace name/logo, profile name/avatar, departments CRUD, dirty-state guard, Supabase reads/writes)
 - `calendar`, `time-off-setup` — stub `<div>` placeholders
 
@@ -62,12 +64,15 @@ Defined in `src/App.tsx`. `/dashboard` redirects to `/dashboard/requests`. Curre
 
 - `src/lib/settings-service.ts` — Supabase calls for Settings page: `fetchDepartments`, `createDepartment`, `updateDepartment`, `deleteDepartment`, `updateWorkspace`, `updateProfile`, `uploadImage`, `removeImage`
 - `src/lib/employee-service.ts` — Supabase calls for Employees page: `fetchEmployees`, `inviteEmployee` (calls the `invite-employee` Edge Function)
+- `src/hooks/use-image-upload.ts` — reusable hook for avatar/logo file selection: exposes `file`, `preview`, `error`, `inputRef`, `handleSelect`, `handleRemove`. Validates type (PNG/JPEG) and size (≤2 MB) client-side.
 
 ### Supabase Edge Functions
 
 - `supabase/functions/invite-employee/` — Deno function that verifies caller JWT, creates a Supabase auth user via admin API, and inserts a `profiles` row. Deploy with `supabase functions deploy invite-employee`.
 
 ### Layout structure
+
+Non-dashboard components: `src/components/auth-layout.tsx` (wrapper for login/OTP pages), `src/components/protected-route.tsx` (redirects unauthenticated users), `src/components/nova-logo.tsx`. Dashboard-specific layout: `src/components/layout/DashboardLayout.tsx` and `src/components/layout/Sidebar.tsx`.
 
 `DashboardLayout`: outer `div` with `bg-sidebar-accent p-2 flex h-screen overflow-hidden`, containing a fixed-width `Sidebar` (260px) and a `main` that is `flex-1 overflow-y-auto rounded-xl bg-background`. The sidebar background is visually inset into the app chrome.
 
@@ -82,7 +87,10 @@ Custom tokens beyond shadcn defaults:
 
 ### Component conventions
 
-- UI primitives live in `src/components/ui/`. These are custom components (not auto-generated shadcn CLI output) built to match Figma specs exactly.
+- UI primitives live in `src/components/ui/`. These are custom components (not auto-generated shadcn CLI output) built to match Figma specs exactly. Notable groups:
+  - **Combobox system**: `combobox-menu.tsx`, `combobox-search-field.tsx`, `combobox-menu-item.tsx`, `combobox-menu-label.tsx` — low-level primitives. `location-combobox.tsx` composes these with a static `src/data/cities.json` dataset (~500 entries, `{ name, country }`) for the employee location field.
+  - **Data table**: `data-table-header-cell.tsx`, `data-table-cell.tsx`, `data-table-pagination.tsx` — used in Requests and Employees pages.
+  - **Calendar primitives**: `calendar-cell.tsx`, `calendar-day-button.tsx`, `calendar-event-slot.tsx`, `calendar-header.tsx`, `calendar-arrow-button.tsx` — built but not yet wired to a live calendar page.
 - Radix primitives come from the unified `radix-ui` package (e.g. `import { Tabs, Slot } from "radix-ui"`), **not** individual `@radix-ui/*` packages.
 - Component variants are built with `cva` from `class-variance-authority`.
 - All UI primitives use a `data-slot="<name>"` attribute for identification (e.g. `data-slot="button"`, `data-slot="tabs-trigger"`).

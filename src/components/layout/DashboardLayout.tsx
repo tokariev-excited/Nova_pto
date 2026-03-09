@@ -1,6 +1,7 @@
 import { Outlet } from "react-router-dom"
 import { Sidebar } from "@/components/layout/Sidebar"
 import { NavigationGuardProvider } from "@/contexts/navigation-guard-context"
+import { Toaster } from "@/components/ui/toaster"
 
 export function DashboardLayout() {
   return (
@@ -11,6 +12,7 @@ export function DashboardLayout() {
           <Outlet />
         </main>
       </div>
+      <Toaster />
     </NavigationGuardProvider>
   )
 }

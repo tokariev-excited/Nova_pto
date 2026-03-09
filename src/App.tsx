@@ -11,6 +11,7 @@ const EmployeesPage = lazy(() => import("@/pages/employees").then(m => ({ defaul
 const AccessRestrictedPage = lazy(() => import("@/pages/access-restricted").then(m => ({ default: m.AccessRestrictedPage })))
 const SettingsPage = lazy(() => import("@/pages/settings").then(m => ({ default: m.SettingsPage })))
 const AddEmployeePage = lazy(() => import("@/pages/add-employee").then(m => ({ default: m.AddEmployeePage })))
+const EditEmployeePage = lazy(() => import("@/pages/edit-employee").then(m => ({ default: m.EditEmployeePage })))
 
 export default function App() {
   return (
@@ -33,6 +34,7 @@ export default function App() {
             <Route path="requests" element={<RequestsPage />} />
             <Route path="employees" element={<EmployeesPage />} />
             <Route path="employees/new" element={<AddEmployeePage />} />
+            <Route path="employees/:id/edit" element={<EditEmployeePage />} />
             <Route path="calendar" element={<div className="p-8">Calendar</div>} />
             <Route path="time-off-setup" element={<div className="p-8">Time-off setup</div>} />
             <Route path="settings" element={<SettingsPage />} />

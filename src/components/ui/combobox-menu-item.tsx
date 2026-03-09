@@ -7,6 +7,7 @@ import { Avatar } from "@/components/ui/avatar"
 export interface ComboboxMenuItemProps
   extends React.HTMLAttributes<HTMLDivElement> {
   type?: "simple" | "checkbox" | "icon" | "avatar"
+  variant?: "default" | "destructive"
   label?: string
   selected?: boolean
   icon?: React.ReactNode
@@ -18,6 +19,7 @@ export interface ComboboxMenuItemProps
 
 function ComboboxMenuItem({
   type = "simple",
+  variant = "default",
   label,
   selected = false,
   icon,
@@ -29,11 +31,12 @@ function ComboboxMenuItem({
   children,
   ...props
 }: ComboboxMenuItemProps) {
+  const isDestructive = variant === "destructive"
   return (
     <div
       data-slot="combobox-menu-item"
       className={cn(
-        "flex items-center gap-2 px-2 py-1.5 rounded-[6px]",
+        "flex w-full items-center gap-2 px-2 py-1.5 rounded-[6px]",
         "cursor-pointer select-none",
         "hover:bg-accent",
         className
@@ -47,7 +50,7 @@ function ComboboxMenuItem({
         </span>
       )}
       {type === "icon" && icon && (
-        <span className="flex shrink-0 flex-col items-start justify-center">
+        <span className={cn("flex shrink-0 flex-col items-start justify-center", isDestructive && "text-destructive")}>
           <span className="size-4 shrink-0 overflow-hidden [&_svg]:size-4">
             {icon}
           </span>
@@ -66,7 +69,7 @@ function ComboboxMenuItem({
       )}
 
       {/* Label */}
-      <p className="flex-1 min-w-px min-h-px text-sm font-normal leading-5 tracking-[-0.28px] text-foreground">
+      <p className={cn("flex-1 min-w-px min-h-px text-sm font-normal leading-5 tracking-[-0.28px]", isDestructive ? "text-destructive" : "text-foreground")}>
         {children ?? label}
       </p>
 

@@ -59,6 +59,42 @@ export async function inviteEmployee(data: InviteEmployeeData) {
   return result.profile
 }
 
+export async function fetchEmployee(employeeId: string) {
+  const { data, error } = await supabase
+    .from("profiles")
+    .select("*")
+    .eq("id", employeeId)
+    .single()
+
+  if (error) throw error
+  return data
+}
+
+export interface UpdateEmployeeData {
+  first_name?: string
+  last_name?: string
+  role?: string
+  department_id?: string | null
+  location?: string
+  hire_date?: string
+  avatar_url?: string | null
+}
+
+export async function updateEmployee(
+  employeeId: string,
+  data: UpdateEmployeeData
+) {
+  const { data: result, error } = await supabase
+    .from("profiles")
+    .update(data)
+    .eq("id", employeeId)
+    .select()
+    .single()
+
+  if (error) throw error
+  return result
+}
+
 export async function fetchEmployeeCounts(workspaceId: string) {
   const statuses: EmployeeStatus[] = ["active", "inactive", "deleted"]
   const counts: Record<EmployeeStatus, number> = { active: 0, inactive: 0, deleted: 0 }

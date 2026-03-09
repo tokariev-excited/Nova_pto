@@ -1,9 +1,9 @@
 import { useState, useRef, type ChangeEvent } from "react"
 import { ALLOWED_TYPES, MAX_SIZE } from "@/lib/settings-service"
 
-export function useImageUpload() {
+export function useImageUpload(options?: { initialPreview?: string }) {
   const [file, setFile] = useState<File | null>(null)
-  const [preview, setPreview] = useState<string | null>(null)
+  const [preview, setPreview] = useState<string | null>(options?.initialPreview ?? null)
   const [error, setError] = useState<string | null>(null)
   const inputRef = useRef<HTMLInputElement>(null!)
 

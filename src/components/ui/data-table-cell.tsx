@@ -181,10 +181,10 @@ function DataTableCell({
               src={avatarSrc}
               alt={avatarAlt}
               fallback={avatarFallback}
-              size="md"
-              shape="circle"
+              size="sm"
+              shape="square"
             />
-            <p className="flex-1 min-w-0 truncate text-sm font-normal leading-5 tracking-tight text-foreground">
+            <p className="flex-1 min-w-0 truncate text-sm font-medium leading-5 tracking-tight text-foreground">
               {label}
             </p>
           </>
@@ -198,7 +198,7 @@ function DataTableCell({
               alt={avatarAlt}
               fallback={avatarFallback}
               size="md"
-              shape="circle"
+              shape="square"
             />
             <div className="flex flex-1 min-w-0 flex-col gap-1">
               <p className="truncate text-sm font-medium leading-5 tracking-tight text-foreground">
