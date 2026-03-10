@@ -101,42 +101,37 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   useEffect(() => {
-    let initialFetchDone = false
-
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session)
-      setUser(session?.user ?? null)
-      if (session?.user) {
-        initialFetchDone = true
-        fetchProfileAndWorkspace(session.user.id).finally(() => setLoading(false))
-      } else {
-        setLoading(false)
-      }
-    })
+    let cancelled = false
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
+        if (cancelled) return
+
         setSession(session)
         setUser(session?.user ?? null)
+
         if (session?.user) {
           if (event === 'SIGNED_IN') {
             try {
               await runFounderFlow(session.user.id, session.user.email ?? '')
             } catch { /* non-blocking */ }
+            if (cancelled) return
           }
-          // Skip if getSession() already triggered the initial fetch
-          if (!initialFetchDone) {
-            fetchProfileAndWorkspace(session.user.id)
-          }
-          initialFetchDone = false // allow future auth changes to fetch
+          fetchProfileAndWorkspace(session.user.id).finally(() => {
+            if (!cancelled) setLoading(false)
+          })
         } else {
           setProfile(null)
           setWorkspace(null)
+          setLoading(false)
         }
       }
     )
 
-    return () => subscription.unsubscribe()
+    return () => {
+      cancelled = true
+      subscription.unsubscribe()
+    }
   }, [])
 
   async function refreshWorkspace() {

@@ -20,6 +20,7 @@ import {
   removeImage,
 } from "@/lib/settings-service"
 import { getInitials } from "@/lib/utils"
+import { addToast } from "@/lib/toast"
 import type { Department } from "@/types/department"
 
 interface DepartmentRow {
@@ -59,6 +60,8 @@ export function SettingsPage() {
 
   const logoInputRef = useRef<HTMLInputElement>(null)
   const avatarInputRef = useRef<HTMLInputElement>(null)
+  const logoPreviewRef = useRef<string | null>(null)
+  const avatarPreviewRef = useRef<string | null>(null)
 
   // Load initial data
   useEffect(() => {
@@ -96,7 +99,6 @@ export function SettingsPage() {
         avatarUrl: aUrl,
         departments: rows,
       })
-      console.log("[Settings] initialValues set:", { wName, fName, lName, lUrl, aUrl, departments: rows })
     }
 
     load()
@@ -105,10 +107,7 @@ export function SettingsPage() {
 
   // Dirty detection
   const isDirty = useMemo(() => {
-    if (!initialValues) {
-      console.log("[Settings] isDirty: false (no initialValues)")
-      return false
-    }
+    if (!initialValues) return false
     if (workspaceName !== initialValues.workspaceName) return true
     if (firstName !== initialValues.firstName) return true
     if (lastName !== initialValues.lastName) return true
@@ -123,7 +122,6 @@ export function SettingsPage() {
       const original = initialValues.departments.find((od) => od.id === dept.id)
       if (original && original.name !== dept.name) return true
     }
-    console.log("[Settings] isDirty: false (no changes detected)")
     return false
   }, [workspaceName, firstName, lastName, logoFile, avatarFile, logoRemoved, avatarRemoved, departments, deletedDepartmentIds, initialValues])
 
@@ -146,11 +144,15 @@ export function SettingsPage() {
     return () => window.removeEventListener("beforeunload", handler)
   }, [isDirty])
 
+  // Keep refs in sync for unmount cleanup
+  useEffect(() => { logoPreviewRef.current = logoPreview }, [logoPreview])
+  useEffect(() => { avatarPreviewRef.current = avatarPreview }, [avatarPreview])
+
   // Cleanup object URLs on unmount
   useEffect(() => {
     return () => {
-      if (logoPreview) URL.revokeObjectURL(logoPreview)
-      if (avatarPreview) URL.revokeObjectURL(avatarPreview)
+      if (logoPreviewRef.current) URL.revokeObjectURL(logoPreviewRef.current)
+      if (avatarPreviewRef.current) URL.revokeObjectURL(avatarPreviewRef.current)
     }
   }, [])
 
@@ -158,11 +160,11 @@ export function SettingsPage() {
     const file = e.target.files?.[0]
     if (!file) return
     if (!["image/png", "image/jpeg"].includes(file.type)) {
-      alert("Only PNG and JPG files are allowed")
+      addToast({ title: "Invalid file type", description: "Only PNG and JPG files are allowed" })
       return
     }
     if (file.size > 2 * 1024 * 1024) {
-      alert("File must be under 2 MB")
+      addToast({ title: "File too large", description: "File must be under 2 MB" })
       return
     }
     setLogoFile(file)
@@ -178,11 +180,11 @@ export function SettingsPage() {
     const file = e.target.files?.[0]
     if (!file) return
     if (!["image/png", "image/jpeg"].includes(file.type)) {
-      alert("Only PNG and JPG files are allowed")
+      addToast({ title: "Invalid file type", description: "Only PNG and JPG files are allowed" })
       return
     }
     if (file.size > 2 * 1024 * 1024) {
-      alert("File must be under 2 MB")
+      addToast({ title: "File too large", description: "File must be under 2 MB" })
       return
     }
     setAvatarFile(file)
@@ -346,7 +348,7 @@ export function SettingsPage() {
       })
     } catch (err) {
       console.error("Failed to save settings:", err)
-      alert("Failed to save settings. Please try again.")
+      addToast({ title: "Failed to save settings", description: "Please try again" })
     } finally {
       setSaving(false)
     }

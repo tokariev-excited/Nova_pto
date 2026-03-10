@@ -76,6 +76,9 @@ function Avatar({
   shape = "circle",
   ...props
 }: AvatarProps) {
+  const [imgError, setImgError] = React.useState(false)
+  const showImage = !!src && !imgError
+
   return (
     <AvatarPrimitive.Root
       data-slot="avatar"
@@ -84,11 +87,16 @@ function Avatar({
       className={cn(avatarVariants({ size, shape }), className)}
       {...props}
     >
-      <AvatarPrimitive.Image
-        src={src}
-        alt={alt ?? ""}
-        className="size-full object-cover"
-      />
+      {showImage && (
+        <AvatarPrimitive.Image
+          src={src}
+          alt={alt ?? ""}
+          className="size-full object-cover"
+          onLoadingStatusChange={(status) => {
+            if (status === "error") setImgError(true)
+          }}
+        />
+      )}
       <AvatarPrimitive.Fallback
         className={cn(
           "flex size-full items-center justify-center bg-(--input) font-normal text-foreground",

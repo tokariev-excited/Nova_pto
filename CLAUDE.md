@@ -38,8 +38,8 @@ VITE_SUPABASE_ANON_KEY=...
 
 ### Supabase schema (inferred)
 
-- `workspaces` — `id`, `name`, `logo_url?`, `created_at`
-- `profiles` — `id` (= auth user id), `workspace_id`, `role`, `email`, `first_name?`, `last_name?`, `avatar_url?`, `status` (`EmployeeStatus`), `department_id?`, `location?`, `hire_date?`, `created_at`
+- `workspaces` — `id`, `name`, `logo_url?`, `owner_id`, `created_at`
+- `profiles` — `id` (= auth user id), `workspace_id`, `role`, `email`, `first_name?`, `last_name?`, `avatar_url?`, `status` (`EmployeeStatus`), `department_id?`, `location?`, `hire_date?`, `created_at` (note: `full_name` was split into `first_name` + `last_name` via migration)
 - `departments` — `id`, `workspace_id`, `name`, `created_at`
 - `time_off_requests` (inferred from types) — `id`, `profile_id`, `workspace_id`, `employee_name`, `employee_email`, `employee_avatar_url?`, `start_date`, `end_date`, `request_type`, `status`, `comment?`, `created_at`, `updated_at`
 
@@ -49,10 +49,12 @@ Migrations live in `supabase/migrations/`. Run `supabase db push` to apply them 
 
 Defined in `src/App.tsx`. All page components are lazy-loaded via `React.lazy` + `Suspense`. `/dashboard` redirects to `/dashboard/requests`. Currently implemented pages:
 - `requests` — `RequestsPage` (full UI, Supabase fetch pending)
-- `employees` — `EmployeesPage` (full UI with tabs/search/table, live Supabase data)
-- `employees/new` — `AddEmployeePage` (form: avatar upload, name, email, role, department, hire date, location; calls `inviteEmployee` from employee-service)
+- `employees` — `EmployeesPage` (full UI with tabs/search/table, live Supabase data, status-based filtering, action dropdowns with edit/deactivate/activate/delete)
+- `employees/new` — `AddEmployeePage` (uses shared `EmployeeForm` component; calls `inviteEmployee` from employee-service)
+- `employees/:id/edit` — `EditEmployeePage` (uses shared `EmployeeForm` component; loads via `fetchEmployee`, saves via `updateEmployee`)
 - `settings` — `SettingsPage` (fully wired: workspace name/logo, profile name/avatar, departments CRUD, dirty-state guard, Supabase reads/writes)
 - `calendar`, `time-off-setup` — stub `<div>` placeholders
+- `/access-restricted` — shown when user lacks permissions
 
 ### Types
 
@@ -63,7 +65,8 @@ Defined in `src/App.tsx`. All page components are lazy-loaded via `React.lazy` +
 ### Services
 
 - `src/lib/settings-service.ts` — Supabase calls for Settings page: `fetchDepartments`, `createDepartment`, `updateDepartment`, `deleteDepartment`, `updateWorkspace`, `updateProfile`, `uploadImage`, `removeImage`
-- `src/lib/employee-service.ts` — Supabase calls for Employees page: `fetchEmployees`, `inviteEmployee` (calls the `invite-employee` Edge Function)
+- `src/lib/employee-service.ts` — Supabase calls for Employees page: `fetchEmployees`, `fetchEmployeeCounts`, `fetchEmployee`, `updateEmployee`, `updateEmployeeStatus`, `inviteEmployee` (calls the `invite-employee` Edge Function)
+- `src/lib/toast.ts` — toast notification helper
 - `src/hooks/use-image-upload.ts` — reusable hook for avatar/logo file selection: exposes `file`, `preview`, `error`, `inputRef`, `handleSelect`, `handleRemove`. Validates type (PNG/JPEG) and size (≤2 MB) client-side.
 
 ### Supabase Edge Functions
@@ -95,9 +98,11 @@ Custom tokens beyond shadcn defaults:
 - Component variants are built with `cva` from `class-variance-authority`.
 - All UI primitives use a `data-slot="<name>"` attribute for identification (e.g. `data-slot="button"`, `data-slot="tabs-trigger"`).
 - Higher-level composite components (e.g. `TabGroup`) wrap the lower-level primitives and accept a declarative `items` prop instead of requiring manual composition.
+- `EmployeeForm` (`src/components/EmployeeForm.tsx`) — shared form component used by both `AddEmployeePage` and `EditEmployeePage`. Accepts a `mode` prop (`"add"` | `"edit"`) and optional `initialData` for pre-filling fields in edit mode.
 - `Button` supports a `loading` prop that shows a spinner and disables interaction.
 - Page components export named functions (e.g. `export function LoginPage()`), not default exports.
 - Path alias `@/` maps to `src/`.
+- Utility functions in `src/lib/utils.ts`: `cn()` (class merging), `getInitials(firstName, lastName)`, `getDisplayName(firstName, lastName)`.
 
 ## Workflow Orchestration
 

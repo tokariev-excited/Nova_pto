@@ -118,10 +118,9 @@ export function EmployeesPage() {
   // Initial load
   useEffect(() => {
     if (!workspace) return
-    loadEmployees(activeTab)
     loadCounts()
     fetchDepartments(workspace.id).then(setDepartments).catch(console.error)
-  }, [workspace])
+  }, [workspace, loadCounts])
 
   // Reload on tab change
   useEffect(() => {

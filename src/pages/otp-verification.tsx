@@ -1,22 +1,35 @@
+import { useState } from "react"
 import { useNavigate, useLocation, Navigate } from "react-router-dom"
 import { supabase } from "@/lib/supabase"
 import { useAuth } from "@/contexts/auth-context"
 import { AuthLayout } from "@/components/auth-layout"
 import { NovaLogo } from "@/components/nova-logo"
 import { Button } from "@/components/ui/button"
+import { addToast } from "@/lib/toast"
 
 export function CheckEmailPage() {
   const { user, loading: authLoading } = useAuth()
   const navigate = useNavigate()
   const location = useLocation()
   const email = (location.state as { email?: string })?.email
+  const [resending, setResending] = useState(false)
 
   if (authLoading) return null
   if (user) return <Navigate to="/dashboard" replace />
   if (!email) return <Navigate to="/login" replace />
 
   async function handleResend() {
-    await supabase.auth.signInWithOtp({ email: email! })
+    setResending(true)
+    try {
+      const { error } = await supabase.auth.signInWithOtp({ email: email! })
+      if (error) throw error
+      addToast({ title: "Email resent", description: `A new login link was sent to ${email}` })
+    } catch (err) {
+      console.error("Failed to resend OTP:", err)
+      addToast({ title: "Failed to resend", description: "Please try again in a moment" })
+    } finally {
+      setResending(false)
+    }
   }
 
   return (
@@ -44,9 +57,10 @@ export function CheckEmailPage() {
           <button
             type="button"
             onClick={handleResend}
-            className="font-medium text-foreground hover:underline"
+            disabled={resending}
+            className="font-medium text-foreground hover:underline disabled:opacity-50"
           >
-            Resend
+            {resending ? "Resending…" : "Resend"}
           </button>
         </p>
 

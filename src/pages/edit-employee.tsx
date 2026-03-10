@@ -22,10 +22,11 @@ export function EditEmployeePage() {
       .then((data) => setEmployee(data as Profile))
       .catch((err) => {
         console.error("Failed to fetch employee:", err)
+        addToast({ title: "Employee not found", description: "Could not load employee details" })
         navigate("/dashboard/employees")
       })
       .finally(() => setLoading(false))
-  }, [id])
+  }, [id, navigate])
 
   async function handleSubmit(data: EmployeeFormData) {
     if (!id) return
@@ -52,7 +53,7 @@ export function EditEmployeePage() {
 
     addToast({
       title: "Changes saved successfully",
-      description: "Employee details have been updated.",
+      description: "Employee details have been updated",
     })
     navigate("/dashboard/employees")
   }
