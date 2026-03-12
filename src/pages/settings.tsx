@@ -5,6 +5,7 @@ import { useQueryClient } from "@tanstack/react-query"
 import { useAuth } from "@/contexts/auth-context"
 import { useNavigationGuard } from "@/contexts/navigation-guard-context"
 import { Button } from "@/components/ui/button"
+import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip"
 import { Input } from "@/components/ui/input"
 import { Field } from "@/components/ui/field"
 import { Separator } from "@/components/ui/separator"
@@ -558,9 +559,22 @@ export function SettingsPage() {
             <Button variant="secondary" onClick={handleCancel} disabled={!isDirty}>
               Cancel
             </Button>
-            <Button onClick={handleSave} loading={saving} disabled={!isDirty} loadingText="Saving changes">
-              Save changes
-            </Button>
+            {!isDirty ? (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <span tabIndex={0} className="inline-flex">
+                    <Button disabled loadingText="Saving changes">
+                      Save changes
+                    </Button>
+                  </span>
+                </TooltipTrigger>
+                <TooltipContent>No changes to save</TooltipContent>
+              </Tooltip>
+            ) : (
+              <Button onClick={handleSave} loading={saving} loadingText="Saving changes">
+                Save changes
+              </Button>
+            )}
           </div>
         </div>
       </div>

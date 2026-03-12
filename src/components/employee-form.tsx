@@ -2,6 +2,7 @@ import { useState, useMemo } from "react"
 import { CloudUpload, User } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
+import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip"
 import { Input } from "@/components/ui/input"
 import { Field } from "@/components/ui/field"
 import { Avatar } from "@/components/ui/avatar"
@@ -94,6 +95,34 @@ export function EmployeeForm({
   const [emailError, setEmailError] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
+  // Snapshot initial values once on mount (edit mode only)
+  const initialSnapshot = useMemo(() => {
+    if (mode !== "edit" || !initialData) return null
+    return {
+      firstName: initialData.firstName,
+      lastName: initialData.lastName,
+      departmentId: initialData.departmentId,
+      role: initialData.role,
+      location: initialData.location,
+      startDate: initialData.startDate?.getTime(),
+      avatarUrl: initialData.avatarUrl ?? null,
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  const isDirty = useMemo(() => {
+    if (!initialSnapshot) return true // add mode — always "dirty" if valid
+    if (firstName.trim() !== initialSnapshot.firstName) return true
+    if (lastName.trim() !== initialSnapshot.lastName) return true
+    if (departmentId !== initialSnapshot.departmentId) return true
+    if (role !== initialSnapshot.role) return true
+    if (location !== initialSnapshot.location) return true
+    if ((startDate?.getTime() ?? undefined) !== initialSnapshot.startDate) return true
+    if (avatarFile !== null) return true
+    if (avatarRemoved && initialSnapshot.avatarUrl !== null) return true
+    return false
+  }, [firstName, lastName, departmentId, role, location, startDate, avatarFile, avatarRemoved, initialSnapshot])
+
   const displayName = getDisplayName(firstName, lastName)
 
   const isValidEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())
@@ -106,6 +135,28 @@ export function EmployeeForm({
     role.length > 0 &&
     location.trim().length > 0 &&
     startDate !== undefined
+
+  const saveTooltip = useMemo(() => {
+    const allFieldsFilled =
+      firstName.trim().length > 0 &&
+      lastName.trim().length > 0 &&
+      departmentId.length > 0 &&
+      role.length > 0 &&
+      location.trim().length > 0 &&
+      startDate !== undefined &&
+      email.trim().length > 0
+
+    if (mode === "add") {
+      if (allFieldsFilled && !isValidEmail) return "Please enter a valid work email address"
+      if (!isValid || !!fileError) return "Please fill in all required fields to continue"
+      return undefined
+    }
+
+    // edit mode
+    if (!isValid || !!fileError) return "Please fill in all required fields correctly"
+    if (!isDirty) return "No changes to save"
+    return undefined
+  }, [mode, isValid, isValidEmail, fileError, isDirty, firstName, lastName, departmentId, role, location, startDate, email])
 
   function handleEmailBlur() {
     const trimmed = email.trim()
@@ -169,15 +220,30 @@ export function EmployeeForm({
       <div className="w-[600px] flex flex-col gap-4">
         {/* Work email */}
         <Field label="Work email" invalid={emailError}>
-          <Input
-            type="email"
-            placeholder="example@company.com"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            onBlur={handleEmailBlur}
-            aria-invalid={emailError}
-            disabled={mode === "edit"}
-          />
+          {mode === "edit" ? (
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <div className="w-full">
+                  <Input
+                    type="email"
+                    placeholder="example@company.com"
+                    value={email}
+                    disabled
+                  />
+                </div>
+              </TooltipTrigger>
+              <TooltipContent>Email address cannot be changed</TooltipContent>
+            </Tooltip>
+          ) : (
+            <Input
+              type="email"
+              placeholder="example@company.com"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              onBlur={handleEmailBlur}
+              aria-invalid={emailError}
+            />
+          )}
           {emailError && (
             <p className="text-sm text-destructive">
               Please enter a valid email (e.g., name@company.com)
@@ -323,13 +389,30 @@ export function EmployeeForm({
         >
           Cancel
         </Button>
-        <Button
-          type="submit"
-          disabled={!isValid || !!fileError}
-          loading={submitting}
-        >
-          {submitLabel}
-        </Button>
+        {saveTooltip ? (
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <span tabIndex={0} className="inline-flex">
+                <Button
+                  type="submit"
+                  disabled
+                  loading={submitting}
+                >
+                  {submitLabel}
+                </Button>
+              </span>
+            </TooltipTrigger>
+            <TooltipContent>{saveTooltip}</TooltipContent>
+          </Tooltip>
+        ) : (
+          <Button
+            type="submit"
+            disabled={!isValid || !!fileError || !isDirty}
+            loading={submitting}
+          >
+            {submitLabel}
+          </Button>
+        )}
       </div>
     </form>
   )

@@ -284,7 +284,7 @@ export function EmployeesPage() {
               {filteredEmployees.map((emp) => (
                 <div
                   key={emp.id}
-                  className={`flex${emp.status === "active" ? " cursor-pointer" : ""}`}
+                  className={`flex hover:bg-muted/50${emp.status === "active" ? " cursor-pointer" : ""}`}
                   onClick={() => {
                     if (emp.status === "active") {
                       navigate(`/dashboard/employees/${emp.id}/edit`)
@@ -355,7 +355,7 @@ export function EmployeesPage() {
                     label={formatDate(emp.hire_date)}
                   />
                   <div
-                    className="relative flex items-center justify-center w-[56px] h-[72px] px-3 py-2 hover:bg-muted/50"
+                    className="relative flex items-center justify-center w-[56px] h-[72px] px-3 py-2"
                     onClick={(e) => e.stopPropagation()}
                   >
                     <Popover

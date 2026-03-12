@@ -83,7 +83,7 @@ export interface DataTableCellProps extends React.ComponentProps<"div"> {
 }
 
 const cellVariants = cva(
-  "relative flex items-center px-3 py-2 hover:bg-muted/50",
+  "relative flex items-center px-3 py-2",
   {
     variants: {
       size: {

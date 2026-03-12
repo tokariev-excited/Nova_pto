@@ -23,7 +23,7 @@ export interface DataTableHeaderCellProps extends React.ComponentProps<"div"> {
 }
 
 const headerCellVariants = cva(
-  "relative flex items-center hover:bg-muted/50",
+  "relative flex items-center",
   {
     variants: {
       type: {
