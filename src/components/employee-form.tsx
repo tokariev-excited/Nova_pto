@@ -1,7 +1,6 @@
-import { useState, useEffect, useMemo } from "react"
+import { useState, useMemo } from "react"
 import { CloudUpload, User } from "lucide-react"
 
-import { useAuth } from "@/contexts/auth-context"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Field } from "@/components/ui/field"
@@ -17,10 +16,9 @@ import {
 } from "@/components/ui/select"
 import { DatePicker } from "@/components/ui/date-picker"
 import { LocationCombobox } from "@/components/ui/location-combobox"
-import { fetchDepartments } from "@/lib/settings-service"
+import { useDepartments } from "@/hooks/use-departments"
 import { useImageUpload } from "@/hooks/use-image-upload"
 import { getInitials, getDisplayName } from "@/lib/utils"
-import type { Department } from "@/types/department"
 
 export interface EmployeeFormData {
   email: string
@@ -63,8 +61,6 @@ export function EmployeeForm({
   onSubmit,
   onCancel,
 }: EmployeeFormProps) {
-  const { workspace } = useAuth()
-
   // Form state
   const [email, setEmail] = useState(initialData?.email ?? "")
   const [firstName, setFirstName] = useState(initialData?.firstName ?? "")
@@ -93,15 +89,10 @@ export function EmployeeForm({
   }
 
   // UI state
-  const [departments, setDepartments] = useState<Department[]>([])
+  const { data: departments = [] } = useDepartments()
   const [submitting, setSubmitting] = useState(false)
   const [emailError, setEmailError] = useState(false)
   const [error, setError] = useState<string | null>(null)
-
-  useEffect(() => {
-    if (!workspace) return
-    fetchDepartments(workspace.id).then(setDepartments).catch(console.error)
-  }, [workspace])
 
   const displayName = getDisplayName(firstName, lastName)
 

@@ -102,35 +102,74 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     let cancelled = false
+    let resolved = false
 
+    const markResolved = () => {
+      if (!resolved) {
+        resolved = true
+        if (!cancelled) setLoading(false)
+      }
+    }
+
+    // Phase 1: Read initial session from localStorage (lock-free)
+    supabase.auth.getSession().then(async ({ data: { session: initialSession } }) => {
+      if (cancelled) return
+
+      setSession(initialSession)
+      setUser(initialSession?.user ?? null)
+
+      if (initialSession?.user) {
+        try {
+          await fetchProfileAndWorkspace(initialSession.user.id)
+        } catch (err) {
+          console.error("[Auth] Failed to load profile/workspace:", err)
+        }
+      }
+      markResolved()
+    }).catch((err) => {
+      console.error("[Auth] getSession failed:", err)
+      markResolved()
+    })
+
+    // Phase 2: Subscribe to future auth events (skip INITIAL_SESSION)
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
         if (cancelled) return
+        if (event === "INITIAL_SESSION") return
 
         setSession(session)
         setUser(session?.user ?? null)
 
         if (session?.user) {
-          if (event === 'SIGNED_IN') {
+          if (event === "SIGNED_IN") {
             try {
-              await runFounderFlow(session.user.id, session.user.email ?? '')
+              await runFounderFlow(session.user.id, session.user.email ?? "")
             } catch { /* non-blocking */ }
             if (cancelled) return
           }
           fetchProfileAndWorkspace(session.user.id).finally(() => {
-            if (!cancelled) setLoading(false)
+            markResolved()
           })
         } else {
           setProfile(null)
           setWorkspace(null)
-          setLoading(false)
+          markResolved()
         }
       }
     )
 
+    // Safety net: force loading off after 10s
+    const safetyTimeout = setTimeout(() => {
+      if (!resolved) {
+        console.warn("[Auth] Safety timeout — forcing loading off")
+        markResolved()
+      }
+    }, 10_000)
+
     return () => {
       cancelled = true
       subscription.unsubscribe()
+      clearTimeout(safetyTimeout)
     }
   }, [])
 

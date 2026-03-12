@@ -40,6 +40,9 @@ export interface DataTableCellProps extends React.ComponentProps<"div"> {
   description?: string
   showDescription?: boolean
 
+  // Label class override (for "text" type)
+  labelClassName?: string
+
   // Icons (for "text" type)
   leftIcon?: React.ReactNode
   showLeftIcon?: boolean
@@ -123,6 +126,7 @@ function DataTableCell({
   showRightIcon = true,
   avatarSrc,
   avatarAlt,
+  labelClassName,
   avatarFallback,
   imageSrc,
   imageAlt,
@@ -153,7 +157,7 @@ function DataTableCell({
         return (
           <>
             {showLeftIcon && leftIcon}
-            <p className="flex-1 min-w-0 truncate text-sm font-normal leading-5 tracking-tight text-foreground">
+            <p className={cn("flex-1 min-w-0 truncate text-sm font-normal leading-5 tracking-tight text-foreground", labelClassName)}>
               {label}
             </p>
             {showRightIcon && rightIcon}
@@ -289,4 +293,4 @@ function DataTableCell({
   )
 }
 
-export { DataTableCell, cellVariants }
+export { DataTableCell }

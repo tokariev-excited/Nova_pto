@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react"
+import { useEffect } from "react"
 import { useNavigate, useParams } from "react-router-dom"
 import { Users, ChevronRight } from "lucide-react"
 
@@ -6,27 +6,22 @@ import { Separator } from "@/components/ui/separator"
 import { BreadcrumbItem } from "@/components/ui/breadcrumb-item"
 import { EmployeeForm, type EmployeeFormData } from "@/components/employee-form"
 import { uploadImage } from "@/lib/settings-service"
-import { fetchEmployee, updateEmployee } from "@/lib/employee-service"
+import { useEmployee, useUpdateEmployeeMutation } from "@/hooks/use-employees"
 import { addToast } from "@/lib/toast"
 import type { Profile } from "@/contexts/auth-context"
 
 export function EditEmployeePage() {
   const navigate = useNavigate()
   const { id } = useParams<{ id: string }>()
-  const [employee, setEmployee] = useState<Profile | null>(null)
-  const [loading, setLoading] = useState(true)
+  const { data: employee, isLoading: loading, isError } = useEmployee(id)
+  const updateMutation = useUpdateEmployeeMutation()
 
   useEffect(() => {
-    if (!id) return
-    fetchEmployee(id)
-      .then((data) => setEmployee(data as Profile))
-      .catch((err) => {
-        console.error("Failed to fetch employee:", err)
-        addToast({ title: "Employee not found", description: "Could not load employee details" })
-        navigate("/dashboard/employees")
-      })
-      .finally(() => setLoading(false))
-  }, [id, navigate])
+    if (isError) {
+      addToast({ title: "Employee not found", description: "Could not load employee details" })
+      navigate("/dashboard/employees")
+    }
+  }, [isError, navigate])
 
   async function handleSubmit(data: EmployeeFormData) {
     if (!id) return
@@ -39,16 +34,19 @@ export function EditEmployeePage() {
       avatarUrl = null
     }
 
-    await updateEmployee(id, {
-      first_name: data.firstName || undefined,
-      last_name: data.lastName || undefined,
-      role: data.role,
-      department_id: data.departmentId || null,
-      location: data.location || undefined,
-      hire_date: data.startDate
-        ? data.startDate.toISOString().split("T")[0]
-        : undefined,
-      ...(avatarUrl !== undefined && { avatar_url: avatarUrl }),
+    await updateMutation.mutateAsync({
+      employeeId: id,
+      data: {
+        first_name: data.firstName || undefined,
+        last_name: data.lastName || undefined,
+        role: data.role,
+        department_id: data.departmentId || null,
+        location: data.location || undefined,
+        hire_date: data.startDate
+          ? data.startDate.toISOString().split("T")[0]
+          : undefined,
+        ...(avatarUrl !== undefined && { avatar_url: avatarUrl }),
+      },
     })
 
     addToast({
@@ -90,17 +88,19 @@ export function EditEmployeePage() {
 
   if (!employee) return null
 
+  const emp = employee as Profile
+
   const initialData = {
-    email: employee.email,
-    firstName: employee.first_name ?? "",
-    lastName: employee.last_name ?? "",
-    departmentId: employee.department_id ?? "",
-    role: employee.role,
-    location: employee.location ?? "",
-    startDate: employee.hire_date
-      ? new Date(employee.hire_date + "T00:00:00")
+    email: emp.email,
+    firstName: emp.first_name ?? "",
+    lastName: emp.last_name ?? "",
+    departmentId: emp.department_id ?? "",
+    role: emp.role,
+    location: emp.location ?? "",
+    startDate: emp.hire_date
+      ? new Date(emp.hire_date + "T00:00:00")
       : undefined,
-    avatarUrl: employee.avatar_url,
+    avatarUrl: emp.avatar_url,
   }
 
   return (

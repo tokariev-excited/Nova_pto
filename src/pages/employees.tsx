@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useCallback } from "react"
+import { useState, useMemo } from "react"
 import { useNavigate } from "react-router-dom"
 import {
   Users,
@@ -39,15 +39,15 @@ import {
 } from "@/components/ui/alert-dialog"
 import { useAuth, type Profile } from "@/contexts/auth-context"
 import {
-  fetchEmployees,
-  fetchEmployeeCounts,
-  updateEmployeeStatus,
-} from "@/lib/employee-service"
-import { fetchDepartments } from "@/lib/settings-service"
+  useEmployeeList,
+  useEmployeeCounts,
+  useEmployeeStatusMutation,
+  useDeleteEmployeeMutation,
+} from "@/hooks/use-employees"
+import { useDepartments } from "@/hooks/use-departments"
 import { getInitials, getDisplayName } from "@/lib/utils"
 import { addToast } from "@/lib/toast"
 import type { EmployeeStatus } from "@/types/employee"
-import type { Department } from "@/types/department"
 
 type TabValue = EmployeeStatus
 
@@ -62,24 +62,23 @@ function formatDate(dateStr?: string) {
 
 export function EmployeesPage() {
   const navigate = useNavigate()
-  const { workspace, profile: currentProfile } = useAuth()
+  const { profile: currentProfile } = useAuth()
 
   const [activeTab, setActiveTab] = useState<TabValue>("active")
   const [searchQuery, setSearchQuery] = useState("")
-  const [employees, setEmployees] = useState<Profile[]>([])
-  const [counts, setCounts] = useState<Record<EmployeeStatus, number>>({
-    active: 0,
-    inactive: 0,
-    deleted: 0,
-  })
-  const [departments, setDepartments] = useState<Department[]>([])
-  const [loading, setLoading] = useState(true)
 
   // Dropdown state
   const [openPopoverId, setOpenPopoverId] = useState<string | null>(null)
 
   // Delete dialog state
   const [deleteTarget, setDeleteTarget] = useState<Profile | null>(null)
+
+  // Query hooks
+  const { data: employees = [], isLoading: loading } = useEmployeeList(activeTab)
+  const { data: counts = { active: 0, inactive: 0, deleted: 0 } } = useEmployeeCounts()
+  const { data: departments = [] } = useDepartments()
+  const statusMutation = useEmployeeStatusMutation()
+  const deleteMutation = useDeleteEmployeeMutation()
 
   const departmentMap = useMemo(() => {
     const map = new Map<string, string>()
@@ -89,47 +88,9 @@ export function EmployeesPage() {
     return map
   }, [departments])
 
-  const loadEmployees = useCallback(
-    async (status: EmployeeStatus) => {
-      if (!workspace) return
-      setLoading(true)
-      try {
-        const { data } = await fetchEmployees(workspace.id, status, 0, 100)
-        setEmployees(data as Profile[])
-      } catch (err) {
-        console.error("Failed to fetch employees:", err)
-      } finally {
-        setLoading(false)
-      }
-    },
-    [workspace]
-  )
-
-  const loadCounts = useCallback(async () => {
-    if (!workspace) return
-    try {
-      const c = await fetchEmployeeCounts(workspace.id)
-      setCounts(c)
-    } catch (err) {
-      console.error("Failed to fetch counts:", err)
-    }
-  }, [workspace])
-
-  // Initial load
-  useEffect(() => {
-    if (!workspace) return
-    loadCounts()
-    fetchDepartments(workspace.id).then(setDepartments).catch(console.error)
-  }, [workspace, loadCounts])
-
-  // Reload on tab change
-  useEffect(() => {
-    loadEmployees(activeTab)
-  }, [activeTab, loadEmployees])
-
   // Filter out workspace owner and apply search
   const filteredEmployees = useMemo(() => {
-    let list = employees
+    let list = employees as Profile[]
     if (currentProfile) {
       list = list.filter((e) => e.id !== currentProfile.id)
     }
@@ -166,48 +127,45 @@ export function EmployeesPage() {
     navigate("/dashboard/employees/new")
   }
 
-  async function handleDeactivate(emp: Profile) {
-    try {
-      await updateEmployeeStatus(emp.id, "inactive")
-      addToast({
-        title: "Employee deactivated",
-        description: `${getDisplayName(emp.first_name, emp.last_name) || emp.email} has been deactivated`,
-      })
-      loadEmployees(activeTab)
-      loadCounts()
-    } catch (err) {
-      console.error("Failed to deactivate employee:", err)
-    }
+  function handleDeactivate(emp: Profile) {
+    statusMutation.mutate(
+      { employeeId: emp.id, status: "inactive" },
+      {
+        onSuccess: () => {
+          addToast({
+            title: "Employee deactivated",
+            description: `${getDisplayName(emp.first_name, emp.last_name) || emp.email} has been deactivated`,
+          })
+        },
+      }
+    )
   }
 
-  async function handleActivate(emp: Profile) {
-    try {
-      await updateEmployeeStatus(emp.id, "active")
-      addToast({
-        title: "Employee activated",
-        description: `${getDisplayName(emp.first_name, emp.last_name) || emp.email} is now back in the Active list`,
-      })
-      loadEmployees(activeTab)
-      loadCounts()
-    } catch (err) {
-      console.error("Failed to activate employee:", err)
-    }
+  function handleActivate(emp: Profile) {
+    statusMutation.mutate(
+      { employeeId: emp.id, status: "active" },
+      {
+        onSuccess: () => {
+          addToast({
+            title: "Employee activated",
+            description: `${getDisplayName(emp.first_name, emp.last_name) || emp.email} is now back in the Active list`,
+          })
+        },
+      }
+    )
   }
 
-  async function handleDeleteConfirm() {
+  function handleDeleteConfirm() {
     if (!deleteTarget) return
-    try {
-      await updateEmployeeStatus(deleteTarget.id, "deleted")
-      addToast({
-        title: "Employee deleted",
-        description: `${getDisplayName(deleteTarget.first_name, deleteTarget.last_name) || deleteTarget.email} has been deleted`,
-      })
-      setDeleteTarget(null)
-      loadEmployees(activeTab)
-      loadCounts()
-    } catch (err) {
-      console.error("Failed to delete employee:", err)
-    }
+    deleteMutation.mutate(deleteTarget.id, {
+      onSuccess: () => {
+        addToast({
+          title: "Employee deleted",
+          description: `${getDisplayName(deleteTarget.first_name, deleteTarget.last_name) || deleteTarget.email} has been deleted`,
+        })
+        setDeleteTarget(null)
+      },
+    })
   }
 
   return (
@@ -289,7 +247,7 @@ export function EmployeesPage() {
           </div>
 
           {/* Body */}
-          {loading && employees.length === 0 ? (
+          {loading && filteredEmployees.length === 0 ? (
             <div className="flex items-center justify-center py-16">
               <p className="text-sm text-muted-foreground">Loading…</p>
             </div>
@@ -367,6 +325,7 @@ export function EmployeesPage() {
                     type="text"
                     size="md"
                     className="w-[180px]"
+                    labelClassName="font-medium"
                     label={
                       emp.department_id
                         ? departmentMap.get(emp.department_id) ?? "—"

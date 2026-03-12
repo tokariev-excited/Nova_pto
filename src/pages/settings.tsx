@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo, useRef, useCallback } from "react"
 import { Settings, Plus, Trash2, CloudUpload, User } from "lucide-react"
+import { useQueryClient } from "@tanstack/react-query"
 
 import { useAuth } from "@/contexts/auth-context"
 import { useNavigationGuard } from "@/contexts/navigation-guard-context"
@@ -9,6 +10,7 @@ import { Field } from "@/components/ui/field"
 import { Separator } from "@/components/ui/separator"
 import { Avatar } from "@/components/ui/avatar"
 import { BreadcrumbItem } from "@/components/ui/breadcrumb-item"
+import { useDepartments } from "@/hooks/use-departments"
 import {
   fetchDepartments,
   createDepartment,
@@ -19,6 +21,7 @@ import {
   uploadImage,
   removeImage,
 } from "@/lib/settings-service"
+import { departmentKeys, employeeKeys } from "@/lib/query-keys"
 import { getInitials } from "@/lib/utils"
 import { addToast } from "@/lib/toast"
 import type { Department } from "@/types/department"
@@ -41,6 +44,8 @@ interface InitialValues {
 export function SettingsPage() {
   const { workspace, profile, user, refreshWorkspace, refreshProfile } = useAuth()
   const { registerGuard, unregisterGuard } = useNavigationGuard()
+  const queryClient = useQueryClient()
+  const { data: cachedDepartments } = useDepartments()
 
   const [workspaceName, setWorkspaceName] = useState("")
   const [firstName, setFirstName] = useState("")
@@ -63,9 +68,9 @@ export function SettingsPage() {
   const logoPreviewRef = useRef<string | null>(null)
   const avatarPreviewRef = useRef<string | null>(null)
 
-  // Load initial data
+  // Load initial data from auth context + cached departments
   useEffect(() => {
-    if (!workspace || !profile) return
+    if (!workspace || !profile || !cachedDepartments) return
 
     const wName = workspace.name || ""
     const fName = profile.first_name || ""
@@ -79,31 +84,17 @@ export function SettingsPage() {
     setLogoUrl(lUrl)
     setAvatarUrl(aUrl)
 
-    let cancelled = false
-
-    async function load() {
-      let rows: DepartmentRow[] = []
-      try {
-        const deps = await fetchDepartments(workspace.id)
-        rows = deps.map((d: Department) => ({ id: d.id, name: d.name, isNew: false }))
-      } catch (err) {
-        console.error("Failed to fetch departments:", err)
-      }
-      if (cancelled) return
-      setDepartments(rows)
-      setInitialValues({
-        workspaceName: wName,
-        firstName: fName,
-        lastName: lName,
-        logoUrl: lUrl,
-        avatarUrl: aUrl,
-        departments: rows,
-      })
-    }
-
-    load()
-    return () => { cancelled = true }
-  }, [workspace?.id, profile?.id])
+    const rows = cachedDepartments.map((d: Department) => ({ id: d.id, name: d.name, isNew: false }))
+    setDepartments(rows)
+    setInitialValues({
+      workspaceName: wName,
+      firstName: fName,
+      lastName: lName,
+      logoUrl: lUrl,
+      avatarUrl: aUrl,
+      departments: rows,
+    })
+  }, [workspace?.id, profile?.id, cachedDepartments])
 
   // Dirty detection
   const isDirty = useMemo(() => {
@@ -319,7 +310,11 @@ export function SettingsPage() {
       // 6. Refresh auth context (updates sidebar)
       await Promise.all([refreshWorkspace(), refreshProfile()])
 
-      // 7. Re-fetch departments and reset state
+      // 7. Invalidate query caches so other pages pick up changes
+      await queryClient.invalidateQueries({ queryKey: departmentKeys.all(workspace.id) })
+      queryClient.invalidateQueries({ queryKey: employeeKeys.all(workspace.id) })
+
+      // 8. Re-fetch departments and reset state
       const freshDeps = await fetchDepartments(workspace.id)
       const rows = freshDeps.map((d: Department) => ({ id: d.id, name: d.name, isNew: false }))
       setDepartments(rows)
@@ -346,6 +341,7 @@ export function SettingsPage() {
         avatarUrl: newAvatarUrl,
         departments: rows,
       })
+      addToast({ title: "Settings saved", description: "Your changes have been saved successfully" })
     } catch (err) {
       console.error("Failed to save settings:", err)
       addToast({ title: "Failed to save settings", description: "Please try again" })

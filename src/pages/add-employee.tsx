@@ -5,11 +5,12 @@ import { Separator } from "@/components/ui/separator"
 import { BreadcrumbItem } from "@/components/ui/breadcrumb-item"
 import { EmployeeForm, type EmployeeFormData } from "@/components/employee-form"
 import { uploadImage } from "@/lib/settings-service"
-import { inviteEmployee } from "@/lib/employee-service"
+import { useInviteEmployeeMutation } from "@/hooks/use-employees"
 import { addToast } from "@/lib/toast"
 
 export function AddEmployeePage() {
   const navigate = useNavigate()
+  const inviteMutation = useInviteEmployeeMutation()
 
   async function handleSubmit(data: EmployeeFormData) {
     let avatarUrl: string | null = null
@@ -18,7 +19,7 @@ export function AddEmployeePage() {
       avatarUrl = await uploadImage("avatars", "employees", data.avatarFile)
     }
 
-    await inviteEmployee({
+    await inviteMutation.mutateAsync({
       email: data.email,
       first_name: data.firstName || undefined,
       last_name: data.lastName || undefined,

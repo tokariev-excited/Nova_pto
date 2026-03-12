@@ -33,7 +33,7 @@ function RadioGroupOption({
         "disabled:opacity-50 disabled:cursor-not-allowed",
         variant === "card" && [
           "gap-2 px-4 py-3 rounded-[calc(var(--radius)-2px)] border border-border",
-          "bg-secondary data-[state=checked]:bg-background data-[state=checked]:shadow-xs",
+          "bg-background data-[state=checked]:shadow-xs",
         ],
         variant === "default" &&
           (orientation === "left" ? "gap-3" : "gap-2"),
