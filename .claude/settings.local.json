@@ -17,7 +17,8 @@
       "Bash(test:*)",
       "mcp__ide__getDiagnostics",
       "Bash(wc:*)",
-      "Bash(grep:*)"
+      "Bash(grep:*)",
+      "Bash(npm install:*)"
     ]
   }
 }

@@ -24,6 +24,9 @@ const AccessRestrictedPage = lazy(() => import("@/pages/access-restricted").then
 const SettingsPage = lazy(() => import("@/pages/settings").then(m => ({ default: m.SettingsPage })))
 const AddEmployeePage = lazy(() => import("@/pages/add-employee").then(m => ({ default: m.AddEmployeePage })))
 const EditEmployeePage = lazy(() => import("@/pages/edit-employee").then(m => ({ default: m.EditEmployeePage })))
+const TimeOffSetupPage = lazy(() => import("@/pages/time-off-setup").then(m => ({ default: m.TimeOffSetupPage })))
+const AddCategoryPage = lazy(() => import("@/pages/add-category").then(m => ({ default: m.AddCategoryPage })))
+const EditCategoryPage = lazy(() => import("@/pages/edit-category").then(m => ({ default: m.EditCategoryPage })))
 
 export default function App() {
   return (
@@ -49,7 +52,9 @@ export default function App() {
               <Route path="employees/new" element={<AddEmployeePage />} />
               <Route path="employees/:id/edit" element={<EditEmployeePage />} />
               <Route path="calendar" element={<div className="p-8">Calendar</div>} />
-              <Route path="time-off-setup" element={<div className="p-8">Time-off setup</div>} />
+              <Route path="time-off-setup" element={<TimeOffSetupPage />} />
+              <Route path="time-off-setup/new" element={<AddCategoryPage />} />
+              <Route path="time-off-setup/:id/edit" element={<EditCategoryPage />} />
               <Route path="settings" element={<SettingsPage />} />
             </Route>
             <Route path="*" element={<Navigate to="/dashboard" replace />} />

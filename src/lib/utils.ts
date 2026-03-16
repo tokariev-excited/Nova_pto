@@ -14,3 +14,7 @@ export function getInitials(firstName?: string, lastName?: string): string | und
 export function getDisplayName(firstName?: string, lastName?: string): string {
   return [firstName?.trim(), lastName?.trim()].filter(Boolean).join(" ")
 }
+
+export function pluralize(count: number | null, singular: string, plural: string): string {
+  return count === 1 ? singular : plural
+}

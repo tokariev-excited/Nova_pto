@@ -48,5 +48,70 @@ export async function runFounderFlow(userId: string, email: string) {
     console.warn("Failed to seed default departments")
   }
 
+  // Seed default time-off categories (non-blocking)
+  try {
+    await supabase.from("time_off_categories").insert([
+      {
+        workspace_id: workspaceId,
+        name: "Sick leave",
+        emoji: "🤒",
+        leave_type: "paid",
+        accrual_method: "fixed",
+        amount_value: 10,
+        granting_frequency: "yearly",
+        sort_order: 0,
+      },
+      {
+        workspace_id: workspaceId,
+        name: "Vacation",
+        emoji: "🏖️",
+        leave_type: "paid",
+        accrual_method: "fixed",
+        amount_value: 20,
+        granting_frequency: "yearly",
+        sort_order: 1,
+      },
+      {
+        workspace_id: workspaceId,
+        name: "Business trip",
+        emoji: "💼",
+        leave_type: "paid",
+        accrual_method: "unlimited",
+        sort_order: 2,
+      },
+      {
+        workspace_id: workspaceId,
+        name: "Loyalty vacation",
+        emoji: "👑",
+        leave_type: "paid",
+        accrual_method: "anniversary",
+        amount_value: 1,
+        anniversary_years: 1,
+        sort_order: 3,
+      },
+      {
+        workspace_id: workspaceId,
+        name: "Unpaid leave",
+        emoji: "💸",
+        leave_type: "unpaid",
+        accrual_method: "unlimited",
+        sort_order: 4,
+      },
+      {
+        workspace_id: workspaceId,
+        name: "Sabbatical",
+        emoji: "📚",
+        leave_type: "unpaid",
+        accrual_method: "fixed",
+        amount_value: 90,
+        waiting_period_value: 3,
+        waiting_period_unit: "year",
+        sort_order: 5,
+      },
+    ])
+  } catch {
+    console.warn("Failed to seed default time-off categories")
+  }
+
   return { isNewUser: true }
 }

@@ -1,0 +1,117 @@
+import { supabase } from "@/lib/supabase"
+import type { CategoryColor } from "@/lib/category-colors"
+import type {
+  TimeOffCategory,
+  LeaveType,
+  AccrualMethod,
+  GrantingFrequency,
+  PeriodUnit,
+} from "@/types/time-off-category"
+
+export type CreateCategoryData = {
+  workspace_id: string
+  name: string
+  colour: CategoryColor
+  leave_type: LeaveType
+  accrual_method: AccrualMethod
+  amount_value?: number | null
+  granting_frequency?: GrantingFrequency | null
+  accrual_day?: string | null
+  anniversary_years?: number | null
+  waiting_period_value?: number | null
+  waiting_period_unit?: PeriodUnit | null
+  carryover_limit_enabled: boolean
+  carryover_max_days?: number | null
+  carryover_expiration_value?: number | null
+  carryover_expiration_unit?: PeriodUnit | null
+  sort_order: number
+}
+
+export type UpdateCategoryData = Omit<CreateCategoryData, "workspace_id" | "sort_order">
+
+export async function fetchCategory(categoryId: string): Promise<TimeOffCategory> {
+  const { data, error } = await supabase
+    .from("time_off_categories")
+    .select("*")
+    .eq("id", categoryId)
+    .single()
+
+  if (error) throw error
+  return data
+}
+
+export async function createCategory(data: CreateCategoryData): Promise<TimeOffCategory> {
+  const { data: result, error } = await supabase
+    .from("time_off_categories")
+    .insert(data)
+    .select()
+    .single()
+
+  if (error) throw error
+  return result
+}
+
+export async function updateCategory(
+  categoryId: string,
+  data: UpdateCategoryData
+): Promise<TimeOffCategory> {
+  const { data: result, error } = await supabase
+    .from("time_off_categories")
+    .update(data)
+    .eq("id", categoryId)
+    .select()
+    .single()
+
+  if (error) throw error
+  return result
+}
+
+export async function fetchTimeOffCategories(
+  workspaceId: string
+): Promise<TimeOffCategory[]> {
+  const { data, error } = await supabase
+    .from("time_off_categories")
+    .select("*")
+    .eq("workspace_id", workspaceId)
+    .order("sort_order", { ascending: true })
+
+  if (error) throw error
+  return data ?? []
+}
+
+export async function updateCategoryActive(
+  categoryId: string,
+  isActive: boolean
+) {
+  const { data, error } = await supabase
+    .from("time_off_categories")
+    .update({ is_active: isActive })
+    .eq("id", categoryId)
+    .select()
+    .single()
+
+  if (error) throw error
+  return data
+}
+
+export async function deleteCategory(categoryId: string) {
+  const { error } = await supabase
+    .from("time_off_categories")
+    .delete()
+    .eq("id", categoryId)
+
+  if (error) throw error
+}
+
+export async function updateCategorySortOrder(
+  items: { id: string; sort_order: number }[]
+) {
+  for (const item of items) {
+    const { error } = await supabase
+      .from("time_off_categories")
+      .update({ sort_order: item.sort_order })
+      .eq("id", item.id)
+
+    if (error) throw error
+  }
+}
