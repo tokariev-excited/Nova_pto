@@ -1,26 +1,19 @@
 import { useState } from "react"
 import { useNavigate } from "react-router-dom"
-import { FileClock, Plus } from "lucide-react"
 import {
-  DndContext,
-  closestCenter,
-  KeyboardSensor,
-  PointerSensor,
-  useSensor,
-  useSensors,
-  type DragEndEvent,
-} from "@dnd-kit/core"
-import {
-  SortableContext,
-  sortableKeyboardCoordinates,
-  verticalListSortingStrategy,
-  arrayMove,
-} from "@dnd-kit/sortable"
+  FileClock,
+  Plus,
+  GripVerticalIcon,
+  PencilLine,
+  Trash2,
+} from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import { Separator } from "@/components/ui/separator"
 import { TabGroup } from "@/components/ui/tab-group"
 import { DataTableHeaderCell } from "@/components/ui/data-table-header-cell"
+import { DataTableCell } from "@/components/ui/data-table-cell"
+import { Badge } from "@/components/ui/badge"
 import { Empty } from "@/components/ui/empty"
 import { BreadcrumbItem } from "@/components/ui/breadcrumb-item"
 import {
@@ -33,13 +26,12 @@ import {
   AlertDialogCancel,
   AlertDialogAction,
 } from "@/components/ui/alert-dialog"
-import { SortableCategoryRow } from "@/components/sortable-category-row"
 import {
   useTimeOffCategories,
   useToggleCategoryActiveMutation,
   useDeleteCategoryMutation,
-  useReorderCategoriesMutation,
 } from "@/hooks/use-time-off-categories"
+import { getAllowancePolicy } from "@/lib/time-off-category-utils"
 import { addToast } from "@/lib/toast"
 import type { TimeOffCategory } from "@/types/time-off-category"
 
@@ -54,25 +46,6 @@ export function TimeOffSetupPage() {
   const { data: categories = [], isLoading } = useTimeOffCategories()
   const toggleMutation = useToggleCategoryActiveMutation()
   const deleteMutation = useDeleteCategoryMutation()
-  const reorderMutation = useReorderCategoriesMutation()
-
-  const sensors = useSensors(
-    useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
-    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
-  )
-
-  function handleDragEnd(event: DragEndEvent) {
-    const { active, over } = event
-    if (!over || active.id === over.id) return
-
-    const oldIndex = categories.findIndex((c) => c.id === active.id)
-    const newIndex = categories.findIndex((c) => c.id === over.id)
-    if (oldIndex === -1 || newIndex === -1) return
-
-    const reordered = arrayMove(categories, oldIndex, newIndex)
-    const items = reordered.map((cat, i) => ({ id: cat.id, sort_order: i }))
-    reorderMutation.mutate(items)
-  }
 
   const tabItems = [
     {
@@ -180,30 +153,73 @@ export function TimeOffSetupPage() {
                 />
               </div>
             ) : (
-              <DndContext
-                sensors={sensors}
-                collisionDetection={closestCenter}
-                onDragEnd={handleDragEnd}
-              >
-                <SortableContext
-                  items={categories.map((c) => c.id)}
-                  strategy={verticalListSortingStrategy}
-                >
-                  <div>
-                    {categories.map((cat) => (
-                      <SortableCategoryRow
-                        key={cat.id}
-                        category={cat}
-                        onToggleActive={handleToggleActive}
-                        onEdit={(c) =>
-                          navigate(`/dashboard/time-off-setup/${c.id}/edit`)
-                        }
-                        onDelete={setDeleteTarget}
+              <div>
+                {categories.map((cat) => {
+                  const policy = getAllowancePolicy(cat)
+                  return (
+                    <div key={cat.id} className="flex hover:bg-muted/50">
+                      <DataTableCell
+                        type="grip"
+                        size="md"
+                        className="w-10"
                       />
-                    ))}
-                  </div>
-                </SortableContext>
-              </DndContext>
+                      <div onClick={(e) => e.stopPropagation()}>
+                        <DataTableCell
+                          type="switch"
+                          size="md"
+                          className="w-[100px]"
+                          switchChecked={cat.is_active}
+                          onSwitchChange={() => handleToggleActive(cat)}
+                        />
+                      </div>
+                      <DataTableCell
+                        type="text"
+                        size="md"
+                        className="w-[320px]"
+                        labelClassName="font-medium"
+                        label={`${cat.emoji ?? ""} ${cat.name}`.trim()}
+                      />
+                      <DataTableCell
+                        type="badge"
+                        size="md"
+                        className="flex-1"
+                        badgeNode={
+                          <Badge variant="secondary">
+                            {cat.leave_type === "paid" ? "Paid" : "Unpaid"}
+                          </Badge>
+                        }
+                      />
+                      <DataTableCell
+                        type="text-description"
+                        size="md"
+                        className="flex-1"
+                        label={policy.main}
+                        description={policy.subtitle}
+                        showDescription={!!policy.subtitle}
+                      />
+                      <div className="relative flex items-center justify-center gap-1 w-24 h-[72px] px-3 py-2">
+                        <Button
+                          variant="outline"
+                          size="icon-sm"
+                          onClick={() =>
+                            navigate(`/dashboard/time-off-setup/${cat.id}/edit`)
+                          }
+                        >
+                          <PencilLine className="size-4" />
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="icon-sm"
+                          onClick={() => setDeleteTarget(cat)}
+                        >
+                          <Trash2 className="size-4" />
+                        </Button>
+                        <div className="absolute bottom-0 left-0 right-0 border-b border-border" />
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
             )}
           </div>
         ) : (
