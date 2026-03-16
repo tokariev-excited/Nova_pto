@@ -1,8 +1,12 @@
 import { supabase } from "@/lib/supabase"
+import { IMAGE_ALLOWED_TYPES, IMAGE_MAX_SIZE } from "@/lib/constants"
+import { validateImageFile } from "@/lib/utils"
 import type { Department } from "@/types/department"
 
-export const ALLOWED_TYPES = ["image/png", "image/jpeg"]
-export const MAX_SIZE = 2 * 1024 * 1024 // 2 MB
+/** @deprecated Use IMAGE_ALLOWED_TYPES from constants.ts */
+export const ALLOWED_TYPES = IMAGE_ALLOWED_TYPES
+/** @deprecated Use IMAGE_MAX_SIZE from constants.ts */
+export const MAX_SIZE = IMAGE_MAX_SIZE
 
 export async function updateWorkspace(
   workspaceId: string,
@@ -66,12 +70,8 @@ export async function deleteDepartment(departmentId: string) {
 }
 
 function validateImage(file: File) {
-  if (!ALLOWED_TYPES.includes(file.type)) {
-    throw new Error("Only PNG and JPG files are allowed")
-  }
-  if (file.size > MAX_SIZE) {
-    throw new Error("File must be under 2 MB")
-  }
+  const error = validateImageFile(file)
+  if (error) throw new Error(error)
 }
 
 export async function uploadImage(

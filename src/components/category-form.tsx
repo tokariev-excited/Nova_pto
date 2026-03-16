@@ -1,6 +1,6 @@
 import { useMemo, useEffect, useRef } from "react"
 import { cn, pluralize } from "@/lib/utils"
-import { useForm, Controller } from "react-hook-form"
+import { useForm, useWatch, Controller } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 
 import { Info } from "lucide-react"
@@ -47,7 +47,6 @@ export function CategoryForm({
   const {
     control,
     handleSubmit,
-    watch,
     setValue,
     formState: { isValid, isDirty, isSubmitting },
   } = useForm<CategoryFormValues>({
@@ -56,14 +55,28 @@ export function CategoryForm({
     mode: "onChange",
   })
 
-  const accrualMethod = watch("accrual_method")
-  const grantingFrequency = watch("granting_frequency")
-  const newHireRule = watch("new_hire_rule")
-  const carryoverEnabled = watch("carryover_limit_enabled")
-  const waitingPeriodValue = watch("waiting_period_value")
-  const amountValue = watch("amount_value")
-  const anniversaryYears = watch("anniversary_years")
-  const carryoverExpirationValue = watch("carryover_expiration_value")
+  const [
+    accrualMethod,
+    grantingFrequency,
+    newHireRule,
+    carryoverEnabled,
+    waitingPeriodValue,
+    amountValue,
+    anniversaryYears,
+    carryoverExpirationValue,
+  ] = useWatch({
+    control,
+    name: [
+      "accrual_method",
+      "granting_frequency",
+      "new_hire_rule",
+      "carryover_limit_enabled",
+      "waiting_period_value",
+      "amount_value",
+      "anniversary_years",
+      "carryover_expiration_value",
+    ],
+  })
 
   const frequencyChangeRef = useRef(true)
 

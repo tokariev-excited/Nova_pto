@@ -4,6 +4,7 @@ import { useQueryClient } from "@tanstack/react-query"
 
 import { useAuth } from "@/contexts/auth-context"
 import { useNavigationGuard } from "@/contexts/navigation-guard-context"
+import { validateImageFile } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip"
 import { Input } from "@/components/ui/input"
@@ -151,12 +152,9 @@ export function SettingsPage() {
   const handleLogoSelect = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (!file) return
-    if (!["image/png", "image/jpeg"].includes(file.type)) {
-      addToast({ title: "Invalid file type", description: "Only PNG and JPG files are allowed" })
-      return
-    }
-    if (file.size > 2 * 1024 * 1024) {
-      addToast({ title: "File too large", description: "File must be under 2 MB" })
+    const validationError = validateImageFile(file)
+    if (validationError) {
+      addToast({ title: "Invalid file", description: validationError })
       return
     }
     setLogoFile(file)
@@ -171,12 +169,9 @@ export function SettingsPage() {
   const handleAvatarSelect = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (!file) return
-    if (!["image/png", "image/jpeg"].includes(file.type)) {
-      addToast({ title: "Invalid file type", description: "Only PNG and JPG files are allowed" })
-      return
-    }
-    if (file.size > 2 * 1024 * 1024) {
-      addToast({ title: "File too large", description: "File must be under 2 MB" })
+    const validationError = validateImageFile(file)
+    if (validationError) {
+      addToast({ title: "Invalid file", description: validationError })
       return
     }
     setAvatarFile(file)

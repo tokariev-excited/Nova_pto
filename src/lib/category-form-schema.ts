@@ -86,7 +86,7 @@ export const categoryFormSchema = z
     }
 
     // Carryover fields required when enabled
-    if (data.carryover_limit_enabled && data.accrual_method !== "unlimited" && data.carryover_max_days == null) {
+    if (data.carryover_limit_enabled && data.accrual_method !== "unlimited" && data.accrual_method !== "anniversary" && data.carryover_max_days == null) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
         path: ["carryover_max_days"],

@@ -14,9 +14,6 @@ import { addToast } from "@/lib/toast"
 import type { TimeOffCategory } from "@/types/time-off-category"
 
 function mapToFormValues(cat: TimeOffCategory): CategoryFormValues {
-  const hasWaitingPeriod =
-    cat.waiting_period_value != null && cat.waiting_period_unit != null
-
   return {
     name: cat.name,
     colour: cat.colour,
@@ -26,7 +23,7 @@ function mapToFormValues(cat: TimeOffCategory): CategoryFormValues {
     granting_frequency: cat.granting_frequency ?? null,
     accrual_day: cat.accrual_day ?? null,
     anniversary_years: cat.anniversary_years ?? null,
-    new_hire_rule: hasWaitingPeriod ? "waiting_period" : "immediate",
+    new_hire_rule: cat.new_hire_rule,
     waiting_period_value: cat.waiting_period_value ?? null,
     waiting_period_unit: cat.waiting_period_unit ?? null,
     carryover_limit_enabled: cat.carryover_limit_enabled,
@@ -75,6 +72,7 @@ export function EditCategoryPage() {
         accrual_day: data.accrual_method === "periodic" ? data.accrual_day : null,
         anniversary_years:
           data.accrual_method === "anniversary" ? data.anniversary_years : null,
+        new_hire_rule: data.new_hire_rule,
         waiting_period_value:
           data.new_hire_rule === "waiting_period" ? data.waiting_period_value : null,
         waiting_period_unit:

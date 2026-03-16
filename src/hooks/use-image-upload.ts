@@ -1,5 +1,5 @@
 import { useState, useRef, type ChangeEvent } from "react"
-import { ALLOWED_TYPES, MAX_SIZE } from "@/lib/settings-service"
+import { validateImageFile } from "@/lib/utils"
 
 export function useImageUpload(options?: { initialPreview?: string }) {
   const [file, setFile] = useState<File | null>(null)
@@ -11,17 +11,9 @@ export function useImageUpload(options?: { initialPreview?: string }) {
     const selected = e.target.files?.[0]
     if (!selected) return
 
-    if (!ALLOWED_TYPES.includes(selected.type)) {
-      setError("Only PNG and JPG files are allowed.")
-      setFile(null)
-      if (preview) URL.revokeObjectURL(preview)
-      setPreview(null)
-      if (inputRef.current) inputRef.current.value = ""
-      return
-    }
-
-    if (selected.size > MAX_SIZE) {
-      setError("File is too large. Max size is 2 MB.")
+    const validationError = validateImageFile(selected)
+    if (validationError) {
+      setError(validationError)
       setFile(null)
       if (preview) URL.revokeObjectURL(preview)
       setPreview(null)

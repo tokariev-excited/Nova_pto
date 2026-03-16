@@ -1,5 +1,6 @@
 import { clsx, type ClassValue } from "clsx"
 import { twMerge } from "tailwind-merge"
+import { IMAGE_ALLOWED_TYPES, IMAGE_MAX_SIZE } from "@/lib/constants"
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
@@ -17,4 +18,14 @@ export function getDisplayName(firstName?: string, lastName?: string): string {
 
 export function pluralize(count: number | null, singular: string, plural: string): string {
   return count === 1 ? singular : plural
+}
+
+export function validateImageFile(file: File): string | null {
+  if (!IMAGE_ALLOWED_TYPES.includes(file.type)) {
+    return "Only PNG and JPG files are allowed."
+  }
+  if (file.size > IMAGE_MAX_SIZE) {
+    return "File is too large. Max size is 2 MB."
+  }
+  return null
 }

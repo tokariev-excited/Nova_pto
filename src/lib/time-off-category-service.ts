@@ -5,6 +5,7 @@ import type {
   LeaveType,
   AccrualMethod,
   GrantingFrequency,
+  NewHireRule,
   PeriodUnit,
 } from "@/types/time-off-category"
 
@@ -18,6 +19,7 @@ export type CreateCategoryData = {
   granting_frequency?: GrantingFrequency | null
   accrual_day?: string | null
   anniversary_years?: number | null
+  new_hire_rule: NewHireRule
   waiting_period_value?: number | null
   waiting_period_unit?: PeriodUnit | null
   carryover_limit_enabled: boolean
@@ -106,12 +108,15 @@ export async function deleteCategory(categoryId: string) {
 export async function updateCategorySortOrder(
   items: { id: string; sort_order: number }[]
 ) {
-  for (const item of items) {
-    const { error } = await supabase
-      .from("time_off_categories")
-      .update({ sort_order: item.sort_order })
-      .eq("id", item.id)
+  const results = await Promise.all(
+    items.map((item) =>
+      supabase
+        .from("time_off_categories")
+        .update({ sort_order: item.sort_order })
+        .eq("id", item.id)
+    )
+  )
 
-    if (error) throw error
-  }
+  const firstError = results.find((r) => r.error)
+  if (firstError?.error) throw firstError.error
 }

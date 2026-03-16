@@ -97,17 +97,21 @@ export async function updateEmployee(
 
 export async function fetchEmployeeCounts(workspaceId: string) {
   const statuses: EmployeeStatus[] = ["active", "inactive", "deleted"]
+
+  const results = await Promise.all(
+    statuses.map((status) =>
+      supabase
+        .from("profiles")
+        .select("id", { count: "exact", head: true })
+        .eq("workspace_id", workspaceId)
+        .eq("status", status)
+    )
+  )
+
   const counts: Record<EmployeeStatus, number> = { active: 0, inactive: 0, deleted: 0 }
-
-  for (const status of statuses) {
-    const { count } = await supabase
-      .from("profiles")
-      .select("*", { count: "exact", head: true })
-      .eq("workspace_id", workspaceId)
-      .eq("status", status)
-
-    counts[status] = count ?? 0
-  }
+  statuses.forEach((status, i) => {
+    counts[status] = results[i].count ?? 0
+  })
 
   return counts
 }

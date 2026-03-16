@@ -1,3 +1,4 @@
+import { useCallback } from "react"
 import { useNavigate, useLocation } from "react-router-dom"
 import {
   ListCheck,
@@ -35,11 +36,14 @@ export function Sidebar() {
   const email = user?.email ?? ""
   const initials = getInitials(profile?.first_name, profile?.last_name) ?? "Y"
 
-  function handleNavigate(path: string) {
-    if (location.pathname === path) return
-    if (!canNavigate()) return
-    navigate(path)
-  }
+  const handleNavigate = useCallback(
+    (path: string) => {
+      if (location.pathname === path) return
+      if (!canNavigate()) return
+      navigate(path)
+    },
+    [location.pathname, canNavigate, navigate]
+  )
 
   const workspaceLogo = workspace?.logo_url ? (
     <Avatar size="sm" shape="square" src={workspace.logo_url} alt={workspaceName} />

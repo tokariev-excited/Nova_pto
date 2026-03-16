@@ -1,7 +1,8 @@
-import { createContext, useContext, useEffect, useState, type ReactNode } from "react"
+import { createContext, useContext, useEffect, useState, useMemo, useCallback, type ReactNode } from "react"
 import type { User, Session } from "@supabase/supabase-js"
 import { supabase } from "@/lib/supabase"
 import { runFounderFlow } from "@/lib/founder-flow"
+import { AUTH_SAFETY_TIMEOUT } from "@/lib/constants"
 import type { EmployeeStatus } from "@/types/employee"
 
 interface Workspace {
@@ -65,7 +66,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (currentUser) {
         try {
           await runFounderFlow(currentUser.id, currentUser.email ?? "")
-        } catch { /* logged in founder flow */ }
+        } catch (err) {
+          console.error("[Auth] Founder flow recovery failed:", err)
+        }
         const { data } = await supabase
           .from("profiles")
           .select("*")
@@ -144,7 +147,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           if (event === "SIGNED_IN") {
             try {
               await runFounderFlow(session.user.id, session.user.email ?? "")
-            } catch { /* non-blocking */ }
+            } catch (err) {
+              console.error("[Auth] Founder flow failed on sign-in:", err)
+            }
             if (cancelled) return
           }
           fetchProfileAndWorkspace(session.user.id).finally(() => {
@@ -164,7 +169,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         console.warn("[Auth] Safety timeout — forcing loading off")
         markResolved()
       }
-    }, 10_000)
+    }, AUTH_SAFETY_TIMEOUT)
 
     return () => {
       cancelled = true
@@ -173,7 +178,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }, [])
 
-  async function refreshWorkspace() {
+  const refreshWorkspace = useCallback(async () => {
     const currentProfile = profile
     if (!currentProfile) return
     const { data, error } = await supabase
@@ -186,9 +191,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       return
     }
     if (data) setWorkspace(data)
-  }
+  }, [profile])
 
-  async function refreshProfile() {
+  const refreshProfile = useCallback(async () => {
     const currentUser = user
     if (!currentUser) return
     const { data, error } = await supabase
@@ -201,18 +206,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       return
     }
     if (data) setProfile(data)
-  }
+  }, [user])
 
-  async function signOut() {
+  const signOut = useCallback(async () => {
     await supabase.auth.signOut()
     setUser(null)
     setSession(null)
     setProfile(null)
     setWorkspace(null)
-  }
+  }, [])
+
+  const value = useMemo(
+    () => ({ user, session, workspace, profile, loading, signOut, refreshWorkspace, refreshProfile }),
+    [user, session, workspace, profile, loading, signOut, refreshWorkspace, refreshProfile]
+  )
 
   return (
-    <AuthContext.Provider value={{ user, session, workspace, profile, loading, signOut, refreshWorkspace, refreshProfile }}>
+    <AuthContext.Provider value={value}>
       {children}
     </AuthContext.Provider>
   )

@@ -1,4 +1,4 @@
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
+import { useQuery, useMutation, useQueryClient, keepPreviousData } from "@tanstack/react-query"
 import { useAuth } from "@/contexts/auth-context"
 import {
   fetchEmployees,
@@ -20,6 +20,7 @@ export function useEmployeeList(status: EmployeeStatus) {
     queryKey: employeeKeys.list(workspace?.id ?? "", status),
     queryFn: () => fetchEmployees(workspace!.id, status, 0, 100),
     enabled: !!workspace,
+    placeholderData: keepPreviousData,
     select: (result) => result.data,
   })
 }
@@ -49,9 +50,14 @@ export function useEmployeeStatusMutation() {
   return useMutation({
     mutationFn: ({ employeeId, status }: { employeeId: string; status: EmployeeStatus }) =>
       updateEmployeeStatus(employeeId, status),
-    onSuccess: () => {
+    onSuccess: (_data, variables) => {
       if (workspace) {
-        queryClient.invalidateQueries({ queryKey: employeeKeys.all(workspace.id) })
+        // Invalidate counts and all status lists (employee moved between lists)
+        queryClient.invalidateQueries({ queryKey: employeeKeys.counts(workspace.id) })
+        queryClient.invalidateQueries({ queryKey: employeeKeys.list(workspace.id, variables.status) })
+        // Also invalidate the previous list since the employee left it
+        queryClient.invalidateQueries({ queryKey: employeeKeys.list(workspace.id, "active") })
+        queryClient.invalidateQueries({ queryKey: employeeKeys.list(workspace.id, "inactive") })
       }
     },
   })
@@ -65,7 +71,10 @@ export function useDeleteEmployeeMutation() {
     mutationFn: (employeeId: string) => updateEmployeeStatus(employeeId, "deleted"),
     onSuccess: () => {
       if (workspace) {
-        queryClient.invalidateQueries({ queryKey: employeeKeys.all(workspace.id) })
+        queryClient.invalidateQueries({ queryKey: employeeKeys.counts(workspace.id) })
+        queryClient.invalidateQueries({ queryKey: employeeKeys.list(workspace.id, "active") })
+        queryClient.invalidateQueries({ queryKey: employeeKeys.list(workspace.id, "inactive") })
+        queryClient.invalidateQueries({ queryKey: employeeKeys.list(workspace.id, "deleted") })
       }
     },
   })

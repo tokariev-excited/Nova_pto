@@ -1,19 +1,33 @@
-# Add New Employee Flow
+# Code Review Fixes
 
-## Implementation checklist
+## HIGH PRIORITY
+- [x] 1. `new_hire_rule` — migration + type + service + page wiring
+- [x] 2. Auth context — error handling for founder flow
+- [x] 3. Auth context — useMemo/useCallback for value to prevent cascading re-renders
+- [x] 4. Error boundary component at dashboard level
+- [x] 5. `fetchEmployeeCounts` — parallelize with Promise.all
 
-- [x] **Step 1:** Create `src/components/ui/popover.tsx` — Radix Popover wrapper (Root, Trigger, Anchor, Content)
-- [x] **Step 2:** Create `src/data/cities.json` — ~500 world cities dataset
-- [x] **Step 3:** Create `src/components/ui/date-picker.tsx` — Calendar popover with month navigation
-- [x] **Step 4:** Create `src/components/ui/location-combobox.tsx` — Autocomplete input with city search
-- [x] **Step 5:** Create `supabase/functions/invite-employee/index.ts` — Edge Function for admin invite
-- [x] **Step 6:** Extend `src/lib/employee-service.ts` — Added `inviteEmployee()` function
-- [x] **Step 7:** Create `src/pages/add-employee.tsx` — Full form page with all fields
-- [x] **Step 8:** Update `src/App.tsx` — Added `/dashboard/employees/new` route
-- [x] **Step 9:** Update `src/pages/employees.tsx` — Wired navigation, real Supabase data, table rows
-- [x] **Step 10:** Migration + `owner_id` — Added to workspaces, updated founder-flow & auth-context
+## MEDIUM PRIORITY
+- [x] 7. CategoryForm — reduce watch() subscriptions (useWatch)
+- [x] 8. SortableCategoryRow — wrap in React.memo
+- [x] 9. select('*') → specific columns (fetchEmployeeCounts: select("id") instead of select("*"))
+- [x] 10. Image validation — single utility (validateImageFile in utils.ts)
+- [x] 11. updateCategorySortOrder — Promise.all for atomicity
+- [x] 13. Employee mutations — targeted invalidation
+- [x] 17. Constants file (src/lib/constants.ts)
+
+## LOW PRIORITY
+- [x] 15. useCallback for handlers in Sidebar, TimeOffSetup
+- [x] 16. Per-route Suspense boundaries in DashboardLayout
+- [x] 19. keepPreviousData on employee list queries
+
+## SKIPPED (too risky / too marginal for this PR)
+- 6. EmployeeForm → react-hook-form (large migration, separate PR)
+- 12. Settings page reduce useState (partially helped by other fixes)
+- 14. NavigationGuard scope (architectural decision, separate PR)
+- 18. FormPageHeader extraction (marginal benefit for 4 pages)
+- 20. Stub pages (informational only)
 
 ## Verification
-
-- [x] `npm run build` — passes (zero new errors)
-- [x] `npm run lint` — passes (only pre-existing vite.config.js error)
+- [x] `npm run build` — passes (zero errors)
+- [x] `npm run lint` — passes clean

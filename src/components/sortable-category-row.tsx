@@ -1,3 +1,4 @@
+import { memo } from "react"
 import { useSortable } from "@dnd-kit/sortable"
 import { CSS } from "@dnd-kit/utilities"
 import { GripVerticalIcon, PencilLine, Trash2 } from "lucide-react"
@@ -15,7 +16,7 @@ interface SortableCategoryRowProps {
   onDelete: (category: TimeOffCategory) => void
 }
 
-export function SortableCategoryRow({
+export const SortableCategoryRow = memo(function SortableCategoryRow({
   category,
   onToggleActive,
   onEdit,
@@ -85,23 +86,23 @@ export function SortableCategoryRow({
         description={policy.subtitle}
         showDescription={!!policy.subtitle}
       />
-      <div className="relative flex items-center justify-center gap-1 w-24 h-[72px] px-3 py-2">
+      <div className="relative flex items-center justify-center gap-2 w-24 h-[72px] px-3 py-2">
         <Button
           variant="outline"
           size="icon-sm"
           onClick={() => onEdit(category)}
         >
-          <PencilLine className="size-4" />
+          <PencilLine className="size-4 text-muted-foreground" />
         </Button>
         <Button
           variant="outline"
           size="icon-sm"
           onClick={() => onDelete(category)}
         >
-          <Trash2 className="size-4" />
+          <Trash2 className="size-4 text-muted-foreground" />
         </Button>
         <div className="absolute bottom-0 left-0 right-0 border-b border-border" />
       </div>
     </div>
   )
-}
+})
