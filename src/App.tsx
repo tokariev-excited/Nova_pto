@@ -1,22 +1,38 @@
-import { lazy, Suspense } from "react"
+import { lazy, Suspense, useEffect } from "react"
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom"
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
+import { QueryClient, QueryClientProvider, useQueryClient } from "@tanstack/react-query"
 import { ReactQueryDevtools } from "@tanstack/react-query-devtools"
 import { AuthProvider } from "@/contexts/auth-context"
 import { ProtectedRoute } from "@/components/protected-route"
 import { DashboardLayout } from "@/components/layout/DashboardLayout"
+import { supabase } from "@/lib/supabase"
 
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
-      staleTime: 30_000,
-      gcTime: 300_000,
+      staleTime: 5 * 60_000,
+      gcTime: 10 * 60_000,
       refetchOnWindowFocus: false,
-      retry: 2,
-      retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 10_000),
+      retry: 3,
+      retryDelay: (attemptIndex) => Math.min(2000 * 2 ** attemptIndex, 15_000),
     },
   },
 })
+
+function AuthQueryBridge() {
+  const queryClient = useQueryClient()
+
+  useEffect(() => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
+      if (event === "SIGNED_OUT") {
+        queryClient.clear()
+      }
+    })
+    return () => subscription.unsubscribe()
+  }, [queryClient])
+
+  return null
+}
 
 const LoginPage = lazy(() => import("@/pages/login").then(m => ({ default: m.LoginPage })))
 const CheckEmailPage = lazy(() => import("@/pages/otp-verification").then(m => ({ default: m.CheckEmailPage })))
@@ -33,6 +49,7 @@ const EditCategoryPage = lazy(() => import("@/pages/edit-category").then(m => ({
 export default function App() {
   return (
     <QueryClientProvider client={queryClient}>
+      <AuthQueryBridge />
       <AuthProvider>
         <BrowserRouter>
           <Suspense fallback={null}>

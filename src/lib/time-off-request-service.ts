@@ -1,0 +1,87 @@
+import { supabase } from "@/lib/supabase"
+import type { TimeOffRequest, TimeOffStatus } from "@/types/time-off-request"
+import type { EmployeeBalance } from "@/types/employee-balance"
+
+export async function fetchTimeOffRequests(workspaceId: string) {
+  const { data, error } = await supabase
+    .from("time_off_requests")
+    .select("*")
+    .eq("workspace_id", workspaceId)
+    .order("created_at", { ascending: false })
+
+  if (error) throw error
+  return (data ?? []) as TimeOffRequest[]
+}
+
+export async function fetchEmployeeBalance(
+  employeeId: string,
+  categoryId: string
+) {
+  const { data, error } = await supabase
+    .from("employee_balances")
+    .select("*")
+    .eq("employee_id", employeeId)
+    .eq("category_id", categoryId)
+    .maybeSingle()
+
+  if (error) throw error
+  return data as EmployeeBalance | null
+}
+
+export interface CreateTimeOffRecordParams {
+  workspace_id: string
+  employee_id: string
+  category_id: string
+  start_date: string
+  end_date: string
+  comment?: string | null
+}
+
+export async function createTimeOffRecord(params: CreateTimeOffRecordParams) {
+  const { data, error } = await supabase.rpc("create_time_off_record", {
+    p_workspace_id: params.workspace_id,
+    p_employee_id: params.employee_id,
+    p_category_id: params.category_id,
+    p_start_date: params.start_date,
+    p_end_date: params.end_date,
+    p_comment: params.comment ?? null,
+  })
+
+  if (error) throw error
+  return data
+}
+
+export async function updateTimeOffRequestStatus(
+  requestId: string,
+  status: TimeOffStatus
+) {
+  const { data, error } = await supabase
+    .from("time_off_requests")
+    .update({ status })
+    .eq("id", requestId)
+    .select()
+    .single()
+
+  if (error) throw error
+  return data as TimeOffRequest
+}
+
+export interface ComboboxEmployee {
+  id: string
+  first_name?: string | null
+  last_name?: string | null
+  email: string
+  avatar_url?: string | null
+}
+
+export async function fetchActiveEmployeesForCombobox(workspaceId: string) {
+  const { data, error } = await supabase
+    .from("profiles")
+    .select("id, first_name, last_name, email, avatar_url")
+    .eq("workspace_id", workspaceId)
+    .eq("status", "active")
+    .order("first_name", { ascending: true })
+
+  if (error) throw error
+  return (data ?? []) as ComboboxEmployee[]
+}

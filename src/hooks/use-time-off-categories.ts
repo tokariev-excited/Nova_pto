@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient, keepPreviousData } from "@tanstack/react-query"
-import { useAuth } from "@/contexts/auth-context"
+import { useAuth } from "@/hooks/use-auth"
 import {
   fetchTimeOffCategories,
   fetchCategory,
@@ -18,7 +18,7 @@ export function useTimeOffCategories() {
   const { workspace } = useAuth()
 
   return useQuery({
-    queryKey: timeOffCategoryKeys.list(workspace?.id ?? "pending"),
+    queryKey: timeOffCategoryKeys.list(workspace?.id ?? ""),
     queryFn: () => fetchTimeOffCategories(workspace!.id),
     enabled: !!workspace,
     placeholderData: keepPreviousData,
@@ -55,10 +55,20 @@ export function useDeleteCategoryMutation() {
 }
 
 export function useCategory(id: string | undefined) {
+  const { workspace } = useAuth()
+  const queryClient = useQueryClient()
+
   return useQuery({
     queryKey: timeOffCategoryKeys.detail(id ?? ""),
     queryFn: () => fetchCategory(id!),
     enabled: !!id,
+    placeholderData: () => {
+      if (!id || !workspace) return undefined
+      const categories = queryClient.getQueryData<TimeOffCategory[]>(
+        timeOffCategoryKeys.list(workspace.id)
+      )
+      return categories?.find((c) => c.id === id)
+    },
   })
 }
 

@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo, useRef, useCallback } from "react"
 import { Settings, Plus, Trash2, CloudUpload, User } from "lucide-react"
 import { useQueryClient } from "@tanstack/react-query"
 
-import { useAuth } from "@/contexts/auth-context"
+import { useAuth } from "@/hooks/use-auth"
 import { useNavigationGuard } from "@/contexts/navigation-guard-context"
 import { validateImageFile } from "@/lib/utils"
 import { Button } from "@/components/ui/button"

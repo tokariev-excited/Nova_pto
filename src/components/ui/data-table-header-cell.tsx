@@ -27,7 +27,7 @@ const headerCellVariants = cva(
   {
     variants: {
       type: {
-        checkbox: "w-10 h-10 justify-center px-3 py-3",
+        checkbox: "w-10 h-10 justify-center pl-3 pr-0 py-3",
         text:     "w-[144px] h-10 px-3 py-2",
         button:   "w-[144px] h-10 px-2 py-1",
       },

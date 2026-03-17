@@ -1,7 +1,7 @@
 import { useState } from "react"
 import { useNavigate, Navigate } from "react-router-dom"
 import { supabase } from "@/lib/supabase"
-import { useAuth } from "@/contexts/auth-context"
+import { useAuth } from "@/hooks/use-auth"
 import { AuthLayout } from "@/components/auth-layout"
 import { NovaLogo } from "@/components/nova-logo"
 import { Input } from "@/components/ui/input"

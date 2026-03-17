@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useState, useMemo, useCallback, useRef, type ReactNode } from "react"
+import { createContext, useEffect, useState, useMemo, useCallback, useRef, type ReactNode } from "react"
 import type { User, Session } from "@supabase/supabase-js"
 import { supabase } from "@/lib/supabase"
 import { runFounderFlow } from "@/lib/founder-flow"
@@ -41,7 +41,7 @@ interface AuthContextType {
   retryAuth: () => void
 }
 
-const AuthContext = createContext<AuthContextType | undefined>(undefined)
+export const AuthContext = createContext<AuthContextType | undefined>(undefined)
 
 async function withRetry<T>(
   fn: () => Promise<T>,
@@ -221,10 +221,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
               markResolved()
             })
         } else {
-          setProfile(null)
-          setWorkspace(null)
-          setAuthError(null)
-          workspaceLoadedRef.current = false
+          // Only clear state for explicit sign-out or initial "not logged in" state.
+          // Transient null-session events must NOT wipe workspace — they cause all
+          // TanStack Query hooks (enabled: !!workspace) to become disabled.
+          if (event === "SIGNED_OUT" || event === "INITIAL_SESSION") {
+            if (workspaceLoadedRef.current) {
+              setProfile(null)
+              setWorkspace(null)
+              setAuthError(null)
+              workspaceLoadedRef.current = false
+            }
+          }
           markResolved()
         }
       }
@@ -308,10 +315,3 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   )
 }
 
-export function useAuth() {
-  const context = useContext(AuthContext)
-  if (!context) {
-    throw new Error("useAuth must be used within an AuthProvider")
-  }
-  return context
-}

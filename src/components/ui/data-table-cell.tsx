@@ -92,7 +92,7 @@ const cellVariants = cva(
         lg: "h-[96px]",
       },
       type: {
-        checkbox: "w-9 justify-center gap-3",
+        checkbox: "w-9 justify-center gap-3 pr-0",
         grip: "w-9 justify-center gap-3",
         ellipsis: "w-9 justify-center",
         footer: "w-[200px] gap-2 bg-muted/50",

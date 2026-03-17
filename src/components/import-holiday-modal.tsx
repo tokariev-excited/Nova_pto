@@ -17,7 +17,7 @@ import {
 } from "@/components/ui/select"
 import { Popover, PopoverAnchor, PopoverContent } from "@/components/ui/popover"
 import { Checkbox } from "@/components/ui/checkbox"
-import { useAuth } from "@/contexts/auth-context"
+import { useAuth } from "@/hooks/use-auth"
 import { useImportHolidaysMutation } from "@/hooks/use-holidays"
 import { fetchPublicHolidays } from "@/lib/holiday-service"
 import { addToast } from "@/lib/toast"

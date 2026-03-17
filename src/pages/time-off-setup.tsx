@@ -65,12 +65,12 @@ export function TimeOffSetupPage() {
   const [selectedHolidayIds, setSelectedHolidayIds] = useState<Set<string>>(new Set())
   const [openPopoverId, setOpenPopoverId] = useState<string | null>(null)
 
-  const { data: categories = [], isLoading } = useTimeOffCategories()
+  const { data: categories = [], isLoading, isError: categoriesError, refetch: refetchCategories } = useTimeOffCategories()
   const toggleMutation = useToggleCategoryActiveMutation()
   const deleteMutation = useDeleteCategoryMutation()
   const reorderMutation = useReorderCategoriesMutation()
 
-  const { data: holidays = [], isLoading: holidaysLoading } = useHolidays()
+  const { data: holidays = [], isLoading: holidaysLoading, isError: holidaysError, refetch: refetchHolidays } = useHolidays()
   const deleteHolidayMutation = useDeleteHolidayMutation()
 
   const sensors = useSensors(
@@ -240,6 +240,21 @@ export function TimeOffSetupPage() {
               <div className="flex items-center justify-center py-16">
                 <p className="text-sm text-muted-foreground">Loading...</p>
               </div>
+            ) : categoriesError && categories.length === 0 ? (
+              <div className="flex items-center justify-center py-16">
+                <Empty
+                  media={{ type: "icon", icon: FileClock }}
+                  title="Unable to load categories"
+                  description="Something went wrong. Please try again."
+                  content={{
+                    layout: "single",
+                    primaryAction: {
+                      label: "Retry",
+                      onClick: () => refetchCategories(),
+                    },
+                  }}
+                />
+              </div>
             ) : categories.length === 0 ? (
               <div className="flex items-center justify-center py-16">
                 <Empty
@@ -288,7 +303,7 @@ export function TimeOffSetupPage() {
             <div className="flex bg-secondary">
               <DataTableHeaderCell
                 type="checkbox"
-                className="w-[28px] pl-3 pr-0"
+                className="w-[28px]"
                 checked={allSelected ? true : someSelected ? "indeterminate" : false}
                 onCheckedChange={handleToggleAll}
               />
@@ -302,6 +317,21 @@ export function TimeOffSetupPage() {
             {holidaysLoading && holidays.length === 0 ? (
               <div className="flex items-center justify-center py-16">
                 <p className="text-sm text-muted-foreground">Loading...</p>
+              </div>
+            ) : holidaysError && holidays.length === 0 ? (
+              <div className="flex items-center justify-center py-16">
+                <Empty
+                  media={{ type: "icon", icon: CalendarSearch }}
+                  title="Unable to load holidays"
+                  description="Something went wrong. Please try again."
+                  content={{
+                    layout: "single",
+                    primaryAction: {
+                      label: "Retry",
+                      onClick: () => refetchHolidays(),
+                    },
+                  }}
+                />
               </div>
             ) : holidays.length === 0 ? (
               <div className="flex items-center justify-center py-12">
@@ -329,7 +359,7 @@ export function TimeOffSetupPage() {
                   <DataTableCell
                     type="checkbox"
                     size="md"
-                    className="w-[28px] pl-3 pr-0"
+                    className="w-[28px]"
                     checked={selectedHolidayIds.has(holiday.id)}
                     onCheckedChange={() => handleToggleOne(holiday.id)}
                   />

@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom"
 import { Lock } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
-import { useAuth } from "@/contexts/auth-context"
+import { useAuth } from "@/hooks/use-auth"
 import { supabase } from "@/lib/supabase"
 
 export function AccessRestrictedPage() {

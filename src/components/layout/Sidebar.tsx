@@ -8,7 +8,9 @@ import {
   Settings,
   LogOut,
 } from "lucide-react"
-import { useAuth } from "@/contexts/auth-context"
+import { useAuth } from "@/hooks/use-auth"
+import { usePendingRequestCount } from "@/hooks/use-time-off-requests"
+import { Badge } from "@/components/ui/badge"
 import { getInitials, getDisplayName } from "@/lib/utils"
 import { useNavigationGuard } from "@/contexts/navigation-guard-context"
 import { NovaLogo } from "@/components/nova-logo"
@@ -27,6 +29,7 @@ const navItems = [
 
 export function Sidebar() {
   const { user, workspace, profile, signOut } = useAuth()
+  const { data: pendingCount = 0 } = usePendingRequestCount()
   const { canNavigate } = useNavigationGuard()
   const navigate = useNavigate()
   const location = useLocation()
@@ -71,6 +74,11 @@ export function Sidebar() {
               icon={<item.icon className="size-4" />}
               isActive={location.pathname.startsWith(item.path)}
               onClick={() => handleNavigate(item.path)}
+              badge={
+                item.path === "/requests" && pendingCount > 0 ? (
+                  <Badge variant="active" size="number">{pendingCount}</Badge>
+                ) : undefined
+              }
             >
               {item.label}
             </SidebarMenuButton>

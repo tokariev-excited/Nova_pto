@@ -5,6 +5,7 @@ export interface TimeOffRequest {
   id: string
   profile_id: string
   workspace_id: string
+  category_id?: string | null
   employee_name: string
   employee_email: string
   employee_avatar_url?: string

@@ -5,7 +5,7 @@ import { Separator } from "@/components/ui/separator"
 import { BreadcrumbItem } from "@/components/ui/breadcrumb-item"
 import { CategoryForm } from "@/components/category-form"
 import { categoryFormDefaults, type CategoryFormValues } from "@/lib/category-form-schema"
-import { useAuth } from "@/contexts/auth-context"
+import { useAuth } from "@/hooks/use-auth"
 import {
   useTimeOffCategories,
   useCreateCategoryMutation,

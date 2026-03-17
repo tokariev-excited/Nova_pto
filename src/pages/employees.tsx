@@ -37,7 +37,8 @@ import {
   AlertDialogCancel,
   AlertDialogAction,
 } from "@/components/ui/alert-dialog"
-import { useAuth, type Profile } from "@/contexts/auth-context"
+import { useAuth } from "@/hooks/use-auth"
+import type { Profile } from "@/contexts/auth-context"
 import {
   useEmployeeList,
   useEmployeeCounts,
@@ -74,7 +75,7 @@ export function EmployeesPage() {
   const [deleteTarget, setDeleteTarget] = useState<Profile | null>(null)
 
   // Query hooks
-  const { data: employees = [], isLoading: loading } = useEmployeeList(activeTab)
+  const { data: employees = [], isLoading: loading, isError, refetch } = useEmployeeList(activeTab)
   const { data: counts = { active: 0, inactive: 0, deleted: 0 } } = useEmployeeCounts()
   const { data: departments = [] } = useDepartments()
   const statusMutation = useEmployeeStatusMutation()
@@ -250,6 +251,21 @@ export function EmployeesPage() {
           {loading && filteredEmployees.length === 0 ? (
             <div className="flex items-center justify-center py-16">
               <p className="text-sm text-muted-foreground">Loading…</p>
+            </div>
+          ) : isError && filteredEmployees.length === 0 ? (
+            <div className="flex items-center justify-center py-16">
+              <Empty
+                media={{ type: "icon", icon: UserSearch }}
+                title="Unable to load employees"
+                description="Something went wrong. Please try again."
+                content={{
+                  layout: "single",
+                  primaryAction: {
+                    label: "Retry",
+                    onClick: () => refetch(),
+                  },
+                }}
+              />
             </div>
           ) : filteredEmployees.length === 0 ? (
             <div className="flex items-center justify-center py-16">

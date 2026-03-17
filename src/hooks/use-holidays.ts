@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient, keepPreviousData } from "@tanstack/react-query"
-import { useAuth } from "@/contexts/auth-context"
+import { useAuth } from "@/hooks/use-auth"
 import {
   fetchHolidays,
   createHoliday,
@@ -15,7 +15,7 @@ export function useHolidays() {
   const { workspace } = useAuth()
 
   return useQuery({
-    queryKey: holidayKeys.list(workspace?.id ?? "pending"),
+    queryKey: holidayKeys.list(workspace?.id ?? ""),
     queryFn: () => fetchHolidays(workspace!.id),
     enabled: !!workspace,
     placeholderData: keepPreviousData,
