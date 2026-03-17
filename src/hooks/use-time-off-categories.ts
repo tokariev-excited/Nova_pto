@@ -1,4 +1,4 @@
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
+import { useQuery, useMutation, useQueryClient, keepPreviousData } from "@tanstack/react-query"
 import { useAuth } from "@/contexts/auth-context"
 import {
   fetchTimeOffCategories,
@@ -18,9 +18,10 @@ export function useTimeOffCategories() {
   const { workspace } = useAuth()
 
   return useQuery({
-    queryKey: timeOffCategoryKeys.list(workspace?.id ?? ""),
+    queryKey: timeOffCategoryKeys.list(workspace?.id ?? "pending"),
     queryFn: () => fetchTimeOffCategories(workspace!.id),
     enabled: !!workspace,
+    placeholderData: keepPreviousData,
   })
 }
 

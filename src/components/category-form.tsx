@@ -83,30 +83,30 @@ export function CategoryForm({
   // Clear dependent fields when accrual method changes
   useEffect(() => {
     if (accrualMethod === "unlimited") {
-      setValue("amount_value", null)
-      setValue("granting_frequency", null)
-      setValue("accrual_day", null)
-      setValue("anniversary_years", null)
-      setValue("carryover_limit_enabled", false)
-      setValue("carryover_max_days", null)
-      setValue("carryover_expiration_value", null)
-      setValue("carryover_expiration_unit", null)
+      setValue("amount_value", null, { shouldDirty: false })
+      setValue("granting_frequency", null, { shouldDirty: false })
+      setValue("accrual_day", null, { shouldDirty: false })
+      setValue("anniversary_years", null, { shouldDirty: false })
+      setValue("carryover_limit_enabled", false, { shouldDirty: false })
+      setValue("carryover_max_days", null, { shouldDirty: false })
+      setValue("carryover_expiration_value", null, { shouldDirty: false })
+      setValue("carryover_expiration_unit", null, { shouldDirty: false })
     } else if (accrualMethod === "fixed") {
-      setValue("accrual_day", null)
-      setValue("anniversary_years", null)
+      setValue("accrual_day", null, { shouldDirty: false })
+      setValue("anniversary_years", null, { shouldDirty: false })
     } else if (accrualMethod === "periodic") {
-      setValue("anniversary_years", null)
+      setValue("anniversary_years", null, { shouldDirty: false })
       // Clear hire_anniversary since it's not valid for periodic
       if (grantingFrequency === "hire_anniversary") {
-        setValue("granting_frequency", null)
-        setValue("accrual_day", null)
+        setValue("granting_frequency", null, { shouldDirty: false })
+        setValue("accrual_day", null, { shouldDirty: false })
       }
     } else if (accrualMethod === "anniversary") {
-      setValue("granting_frequency", null)
-      setValue("accrual_day", null)
-      setValue("carryover_max_days", null)
-      setValue("carryover_expiration_value", null)
-      setValue("carryover_expiration_unit", null)
+      setValue("granting_frequency", null, { shouldDirty: false })
+      setValue("accrual_day", null, { shouldDirty: false })
+      setValue("carryover_max_days", null, { shouldDirty: false })
+      setValue("carryover_expiration_value", null, { shouldDirty: false })
+      setValue("carryover_expiration_unit", null, { shouldDirty: false })
     }
     // Reset the ref so next frequency change will clear accrual_day
     frequencyChangeRef.current = true
@@ -119,14 +119,14 @@ export function CategoryForm({
       frequencyChangeRef.current = false
       return
     }
-    setValue("accrual_day", null)
+    setValue("accrual_day", null, { shouldDirty: false })
   }, [grantingFrequency, setValue])
 
   // Clear waiting period fields when switching to immediate
   useEffect(() => {
     if (newHireRule === "immediate") {
-      setValue("waiting_period_value", null)
-      setValue("waiting_period_unit", "year")
+      setValue("waiting_period_value", null, { shouldDirty: false })
+      setValue("waiting_period_unit", "year", { shouldDirty: false })
     }
   }, [newHireRule, setValue])
 

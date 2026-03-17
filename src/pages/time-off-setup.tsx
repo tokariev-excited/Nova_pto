@@ -39,6 +39,7 @@ import {
 } from "@/components/ui/alert-dialog"
 import { SortableCategoryRow } from "@/components/sortable-category-row"
 import { ImportHolidayModal } from "@/components/import-holiday-modal"
+import { HolidayModal } from "@/components/holiday-modal"
 import {
   useTimeOffCategories,
   useToggleCategoryActiveMutation,
@@ -59,6 +60,8 @@ export function TimeOffSetupPage() {
   const [deleteTarget, setDeleteTarget] = useState<TimeOffCategory | null>(null)
   const [deleteHolidayTarget, setDeleteHolidayTarget] = useState<Holiday | null>(null)
   const [importModalOpen, setImportModalOpen] = useState(false)
+  const [holidayModalOpen, setHolidayModalOpen] = useState(false)
+  const [editingHoliday, setEditingHoliday] = useState<Holiday | null>(null)
   const [selectedHolidayIds, setSelectedHolidayIds] = useState<Set<string>>(new Set())
   const [openPopoverId, setOpenPopoverId] = useState<string | null>(null)
 
@@ -192,31 +195,31 @@ export function TimeOffSetupPage() {
           text="Time-off setup"
           className="flex-1 text-foreground font-medium"
         />
-        {activeTab === "categories" ? (
-          <Button onClick={handleAdd}>
-            <Plus />
-            Add time-off category
-          </Button>
-        ) : (
-          <div className="flex items-center gap-3">
-            <Button variant="secondary">Create holiday</Button>
-            <Button onClick={() => setImportModalOpen(true)}>
-              <CalendarArrowDown />
-              Import holiday calendar
-            </Button>
-          </div>
-        )}
       </div>
 
       {/* Body */}
       <div className="flex flex-col gap-5 p-4">
         {/* Controls */}
-        <div className="flex items-center">
+        <div className="flex items-center justify-between">
           <TabGroup
             value={activeTab}
             onValueChange={(v) => setActiveTab(v as TabValue)}
             items={tabItems}
           />
+          {activeTab === "categories" ? (
+            <Button onClick={handleAdd}>
+              <Plus />
+              Add time-off category
+            </Button>
+          ) : (
+            <div className="flex items-center gap-3">
+              <Button variant="secondary" onClick={() => { setEditingHoliday(null); setHolidayModalOpen(true) }}>Create holiday</Button>
+              <Button onClick={() => setImportModalOpen(true)}>
+                <CalendarArrowDown />
+                Import holiday calendar
+              </Button>
+            </div>
+          )}
         </div>
 
         {activeTab === "categories" ? (
@@ -315,6 +318,7 @@ export function TimeOffSetupPage() {
                     },
                     secondaryAction: {
                       label: "Create holiday",
+                      onClick: () => { setEditingHoliday(null); setHolidayModalOpen(true) },
                     },
                   }}
                 />
@@ -349,7 +353,7 @@ export function TimeOffSetupPage() {
                     className="flex-1"
                     badgeNode={
                       <Badge variant="secondary">
-                        {holiday.is_custom ? "Created" : "Imported"}
+                        {holiday.is_custom ? "Custom" : "Public"}
                       </Badge>
                     }
                   />
@@ -384,6 +388,8 @@ export function TimeOffSetupPage() {
                                         label: "Edit holiday",
                                         onClick: () => {
                                           setOpenPopoverId(null)
+                                          setEditingHoliday(holiday)
+                                          setHolidayModalOpen(true)
                                         },
                                       },
                                     ],
@@ -489,6 +495,11 @@ export function TimeOffSetupPage() {
       </AlertDialog>
 
       <ImportHolidayModal open={importModalOpen} onOpenChange={setImportModalOpen} />
+      <HolidayModal
+        open={holidayModalOpen}
+        onOpenChange={setHolidayModalOpen}
+        holiday={editingHoliday}
+      />
     </div>
   )
 }

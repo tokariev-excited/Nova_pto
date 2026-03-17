@@ -31,10 +31,10 @@ export function Sidebar() {
   const navigate = useNavigate()
   const location = useLocation()
 
-  const workspaceName = workspace?.name || "Your workspace"
-  const displayName = getDisplayName(profile?.first_name, profile?.last_name) || "You"
+  const workspaceName = workspace?.name ?? ""
+  const displayName = getDisplayName(profile?.first_name, profile?.last_name)
   const email = user?.email ?? ""
-  const initials = getInitials(profile?.first_name, profile?.last_name) ?? "Y"
+  const initials = getInitials(profile?.first_name, profile?.last_name) ?? ""
 
   const handleNavigate = useCallback(
     (path: string) => {

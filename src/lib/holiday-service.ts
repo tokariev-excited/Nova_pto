@@ -57,6 +57,26 @@ export async function createHoliday(
   return holiday as Holiday
 }
 
+export interface UpdateHolidayData {
+  name: string
+  date: string
+}
+
+export async function updateHoliday(
+  holidayId: string,
+  data: UpdateHolidayData
+): Promise<Holiday> {
+  const { data: holiday, error } = await supabase
+    .from("holidays")
+    .update(data)
+    .eq("id", holidayId)
+    .select()
+    .single()
+
+  if (error) throw error
+  return holiday as Holiday
+}
+
 export async function deleteHoliday(holidayId: string): Promise<void> {
   const { error } = await supabase
     .from("holidays")

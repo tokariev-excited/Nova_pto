@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useState, useMemo, useCallback, type ReactNode } from "react"
+import { createContext, useContext, useEffect, useState, useMemo, useCallback, useRef, type ReactNode } from "react"
 import type { User, Session } from "@supabase/supabase-js"
 import { supabase } from "@/lib/supabase"
 import { runFounderFlow } from "@/lib/founder-flow"
@@ -34,12 +34,34 @@ interface AuthContextType {
   workspace: Workspace | null
   profile: Profile | null
   loading: boolean
+  authError: string | null
   signOut: () => Promise<void>
   refreshWorkspace: () => Promise<void>
   refreshProfile: () => Promise<void>
+  retryAuth: () => void
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
+
+async function withRetry<T>(
+  fn: () => Promise<T>,
+  maxAttempts: number = 3,
+  baseDelayMs: number = 1000,
+): Promise<T> {
+  let lastError: Error | undefined
+  for (let attempt = 0; attempt < maxAttempts; attempt++) {
+    try {
+      return await fn()
+    } catch (err) {
+      lastError = err instanceof Error ? err : new Error(String(err))
+      if (attempt < maxAttempts - 1) {
+        const delay = baseDelayMs * Math.pow(2, attempt)
+        await new Promise(resolve => setTimeout(resolve, delay))
+      }
+    }
+  }
+  throw lastError!
+}
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null)
@@ -47,8 +69,36 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [workspace, setWorkspace] = useState<Workspace | null>(null)
   const [profile, setProfile] = useState<Profile | null>(null)
   const [loading, setLoading] = useState(true)
+  const [authError, setAuthError] = useState<string | null>(null)
+
+  // Ref to track whether workspace has been loaded (for safety timeout)
+  const workspaceLoadedRef = useRef(false)
+
+  const signOut = useCallback(async () => {
+    await supabase.auth.signOut()
+    setUser(null)
+    setSession(null)
+    setProfile(null)
+    setWorkspace(null)
+    setAuthError(null)
+    workspaceLoadedRef.current = false
+  }, [])
 
   async function fetchProfileAndWorkspace(userId: string) {
+    // Ensure we have a valid, non-expired session before making RLS-gated queries.
+    // On page refresh, INITIAL_SESSION may fire with an expired JWT before the
+    // automatic token refresh completes — proactively refresh it here.
+    const { data: { session: activeSession } } = await supabase.auth.getSession()
+    if (activeSession) {
+      const expiresAt = activeSession.expires_at ?? 0
+      if (expiresAt <= Math.floor(Date.now() / 1000)) {
+        const { error: refreshError } = await supabase.auth.refreshSession()
+        if (refreshError) {
+          throw new Error(`Session expired and refresh failed: ${refreshError.message}`)
+        }
+      }
+    }
+
     let { data: profileData, error: profileError } = await supabase
       .from("profiles")
       .select("*")
@@ -56,8 +106,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       .maybeSingle()
 
     if (profileError) {
-      console.error("[Auth] Failed to fetch profile:", profileError.message, profileError)
-      return
+      throw new Error(`Failed to fetch profile: ${profileError.message}`)
     }
 
     // Recovery: profile missing (founder flow previously failed due to RLS bug)
@@ -78,7 +127,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
     }
 
-    if (!profileData) return
+    if (!profileData) {
+      throw new Error("Profile not found after recovery attempt")
+    }
 
     if (profileData.status === "deleted") {
       await signOut()
@@ -94,13 +145,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       .single()
 
     if (wsError) {
-      console.error("[Auth] Failed to fetch workspace:", wsError.message, wsError)
-      return
+      throw new Error(`Failed to fetch workspace: ${wsError.message}`)
     }
 
-    if (workspaceData) {
-      setWorkspace(workspaceData)
+    if (!workspaceData) {
+      throw new Error("Workspace not found")
     }
+
+    setWorkspace(workspaceData)
+    workspaceLoadedRef.current = true
   }
 
   useEffect(() => {
@@ -124,6 +177,27 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setSession(session)
         setUser(session?.user ?? null)
 
+        // Token refresh only updates the JWT — profile and workspace are unchanged.
+        // However, if the initial load failed (e.g. INITIAL_SESSION had an expired JWT),
+        // use the refreshed token to retry loading profile/workspace.
+        if (event === "TOKEN_REFRESHED") {
+          if (!workspaceLoadedRef.current && session?.user) {
+            withRetry(() => fetchProfileAndWorkspace(session.user.id))
+              .then(() => {
+                if (!cancelled) setAuthError(null)
+                markResolved()
+              })
+              .catch((err) => {
+                console.error("[Auth] Retry after token refresh failed:", err.message)
+                if (!cancelled) {
+                  setAuthError("Unable to load your account data. Please check your connection and try again.")
+                }
+                markResolved()
+              })
+          }
+          return
+        }
+
         if (session?.user) {
           if (event === "SIGNED_IN") {
             try {
@@ -133,21 +207,36 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             }
             if (cancelled) return
           }
-          fetchProfileAndWorkspace(session.user.id).finally(() => {
-            markResolved()
-          })
+
+          withRetry(() => fetchProfileAndWorkspace(session.user.id))
+            .then(() => {
+              if (!cancelled) setAuthError(null)
+              markResolved()
+            })
+            .catch((err) => {
+              console.error("[Auth] All retries failed:", err.message)
+              if (!cancelled) {
+                setAuthError("Unable to load your account data. Please check your connection and try again.")
+              }
+              markResolved()
+            })
         } else {
           setProfile(null)
           setWorkspace(null)
+          setAuthError(null)
+          workspaceLoadedRef.current = false
           markResolved()
         }
       }
     )
 
-    // Safety net: force loading off after 10s
+    // Safety net: force loading off after timeout
     const safetyTimeout = setTimeout(() => {
       if (!resolved) {
         console.warn("[Auth] Safety timeout — forcing loading off")
+        if (!workspaceLoadedRef.current) {
+          setAuthError("Loading took too long. Please check your connection and try again.")
+        }
         markResolved()
       }
     }, AUTH_SAFETY_TIMEOUT)
@@ -158,6 +247,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       clearTimeout(safetyTimeout)
     }
   }, [])
+
+  const retryAuth = useCallback(() => {
+    const currentUser = user
+    if (!currentUser) return
+    setAuthError(null)
+    setLoading(true)
+    withRetry(() => fetchProfileAndWorkspace(currentUser.id))
+      .then(() => {
+        setAuthError(null)
+      })
+      .catch((err) => {
+        console.error("[Auth] Manual retry failed:", err.message)
+        setAuthError("Unable to load your account data. Please check your connection and try again.")
+      })
+      .finally(() => {
+        setLoading(false)
+      })
+  }, [user])
 
   const refreshWorkspace = useCallback(async () => {
     const currentProfile = profile
@@ -189,17 +296,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (data) setProfile(data)
   }, [user])
 
-  const signOut = useCallback(async () => {
-    await supabase.auth.signOut()
-    setUser(null)
-    setSession(null)
-    setProfile(null)
-    setWorkspace(null)
-  }, [])
-
   const value = useMemo(
-    () => ({ user, session, workspace, profile, loading, signOut, refreshWorkspace, refreshProfile }),
-    [user, session, workspace, profile, loading, signOut, refreshWorkspace, refreshProfile]
+    () => ({ user, session, workspace, profile, loading, authError, signOut, refreshWorkspace, refreshProfile, retryAuth }),
+    [user, session, workspace, profile, loading, authError, signOut, refreshWorkspace, refreshProfile, retryAuth]
   )
 
   return (

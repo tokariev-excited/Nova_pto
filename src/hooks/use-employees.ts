@@ -17,7 +17,7 @@ export function useEmployeeList(status: EmployeeStatus) {
   const { workspace } = useAuth()
 
   return useQuery({
-    queryKey: employeeKeys.list(workspace?.id ?? "", status),
+    queryKey: employeeKeys.list(workspace?.id ?? "pending", status),
     queryFn: () => fetchEmployees(workspace!.id, status, 0, 100),
     enabled: !!workspace,
     placeholderData: keepPreviousData,
@@ -29,9 +29,10 @@ export function useEmployeeCounts() {
   const { workspace } = useAuth()
 
   return useQuery({
-    queryKey: employeeKeys.counts(workspace?.id ?? ""),
+    queryKey: employeeKeys.counts(workspace?.id ?? "pending"),
     queryFn: () => fetchEmployeeCounts(workspace!.id),
     enabled: !!workspace,
+    placeholderData: keepPreviousData,
   })
 }
 

@@ -25,7 +25,9 @@ function mapToFormValues(cat: TimeOffCategory): CategoryFormValues {
     anniversary_years: cat.anniversary_years ?? null,
     new_hire_rule: cat.new_hire_rule,
     waiting_period_value: cat.waiting_period_value ?? null,
-    waiting_period_unit: cat.waiting_period_unit ?? null,
+    waiting_period_unit: cat.new_hire_rule === "immediate"
+      ? "year"
+      : (cat.waiting_period_unit ?? null),
     carryover_limit_enabled: cat.carryover_limit_enabled,
     carryover_max_days: cat.carryover_max_days ?? null,
     carryover_expiration_value: cat.carryover_expiration_value ?? null,

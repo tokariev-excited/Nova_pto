@@ -1,20 +1,24 @@
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
+import { useQuery, useMutation, useQueryClient, keepPreviousData } from "@tanstack/react-query"
 import { useAuth } from "@/contexts/auth-context"
 import {
   fetchHolidays,
+  createHoliday,
+  updateHoliday,
   deleteHoliday,
   replaceImportedHolidays,
 } from "@/lib/holiday-service"
-import type { ReplaceHolidayItem } from "@/lib/holiday-service"
+import type { ReplaceHolidayItem, UpdateHolidayData } from "@/lib/holiday-service"
+import type { CreateHolidayData } from "@/types/holiday"
 import { holidayKeys } from "@/lib/query-keys"
 
 export function useHolidays() {
   const { workspace } = useAuth()
 
   return useQuery({
-    queryKey: holidayKeys.list(workspace?.id ?? ""),
+    queryKey: holidayKeys.list(workspace?.id ?? "pending"),
     queryFn: () => fetchHolidays(workspace!.id),
     enabled: !!workspace,
+    placeholderData: keepPreviousData,
   })
 }
 
@@ -33,6 +37,35 @@ export function useImportHolidaysMutation() {
       if (!workspace) throw new Error("No workspace")
       await replaceImportedHolidays(workspace.id, items)
     },
+    onSuccess: () => {
+      if (workspace) {
+        queryClient.invalidateQueries({ queryKey: holidayKeys.all(workspace.id) })
+      }
+    },
+  })
+}
+
+export function useCreateHolidayMutation() {
+  const queryClient = useQueryClient()
+  const { workspace } = useAuth()
+
+  return useMutation({
+    mutationFn: (data: CreateHolidayData) => createHoliday(data),
+    onSuccess: () => {
+      if (workspace) {
+        queryClient.invalidateQueries({ queryKey: holidayKeys.all(workspace.id) })
+      }
+    },
+  })
+}
+
+export function useUpdateHolidayMutation() {
+  const queryClient = useQueryClient()
+  const { workspace } = useAuth()
+
+  return useMutation({
+    mutationFn: ({ holidayId, data }: { holidayId: string; data: UpdateHolidayData }) =>
+      updateHoliday(holidayId, data),
     onSuccess: () => {
       if (workspace) {
         queryClient.invalidateQueries({ queryKey: holidayKeys.all(workspace.id) })

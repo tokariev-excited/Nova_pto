@@ -22,7 +22,10 @@
       "Bash(docker ps:*)",
       "Bash(supabase projects:*)",
       "Bash(supabase db:*)",
-      "Bash(find /Users/yaroslavtokariev/Desktop/Excited/Figma-To-Code-Projects/Nova_pto -type f -name \"*.tsx\" -o -name \"*.ts\" | grep -E \"\\(\\\\.tsx?$\\)\" | head -30)"
+      "Bash(find /Users/yaroslavtokariev/Desktop/Excited/Figma-To-Code-Projects/Nova_pto -type f -name \"*.tsx\" -o -name \"*.ts\" | grep -E \"\\(\\\\.tsx?$\\)\" | head -30)",
+      "Bash(git diff:*)",
+      "Bash(/tmp/analysis.txt:*)",
+      "Read(//tmp/**)"
     ]
   }
 }
