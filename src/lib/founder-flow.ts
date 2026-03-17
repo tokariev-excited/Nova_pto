@@ -42,15 +42,22 @@ export async function runFounderFlow(userId: string, email: string) {
   // Seed default departments (non-blocking)
   try {
     const defaultDepartments = ["Design", "HR", "Engineering", "Product", "Marketing"]
-    await supabase.from("departments").insert(
+    const { error: deptError } = await supabase.from("departments").insert(
       defaultDepartments.map((name) => ({ workspace_id: workspaceId, name }))
     )
-  } catch {
-    console.warn("Failed to seed default departments")
+    if (deptError) {
+      console.warn("Failed to seed default departments:", deptError.message)
+    }
+  } catch (err) {
+    console.warn("Failed to seed default departments:", err)
   }
 
   // Seed default time-off categories (non-blocking)
-  await seedDefaultCategories(workspaceId)
+  try {
+    await seedDefaultCategories(workspaceId)
+  } catch (err) {
+    console.warn("Failed to seed default time-off categories:", err)
+  }
 
   return { isNewUser: true }
 }
