@@ -36,7 +36,7 @@ export function AddEmployeePage() {
       title: "Employee added successfully",
       description: `An invitation has been sent to ${data.email}.`,
     })
-    navigate("/dashboard/employees")
+    navigate("/employees")
   }
 
   return (
@@ -45,7 +45,7 @@ export function AddEmployeePage() {
       <div className="flex items-center gap-2 border-b border-border px-4 h-[60px] shrink-0">
         <button
           className="flex items-center justify-center size-7 rounded-[10px] shrink-0 text-foreground hover:bg-accent transition-colors"
-          onClick={() => navigate("/dashboard/employees")}
+          onClick={() => navigate("/employees")}
         >
           <Users className="size-4" />
         </button>
@@ -54,7 +54,7 @@ export function AddEmployeePage() {
         </div>
         <BreadcrumbItem
           text="Employees"
-          onClick={() => navigate("/dashboard/employees")}
+          onClick={() => navigate("/employees")}
         />
         <ChevronRight className="size-4 text-muted-foreground shrink-0" />
         <BreadcrumbItem
@@ -71,7 +71,7 @@ export function AddEmployeePage() {
           subtitle="Add a team member so you can manage their time off and balances"
           submitLabel="Add employee"
           onSubmit={handleSubmit}
-          onCancel={() => navigate("/dashboard/employees")}
+          onCancel={() => navigate("/employees")}
         />
       </div>
     </div>

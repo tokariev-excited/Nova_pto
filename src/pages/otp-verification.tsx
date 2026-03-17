@@ -15,7 +15,7 @@ export function CheckEmailPage() {
   const [resending, setResending] = useState(false)
 
   if (authLoading) return null
-  if (user) return <Navigate to="/dashboard" replace />
+  if (user) return <Navigate to="/requests" replace />
   if (!email) return <Navigate to="/login" replace />
 
   async function handleResend() {

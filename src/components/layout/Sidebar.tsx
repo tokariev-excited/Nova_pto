@@ -18,11 +18,11 @@ import { SidebarMenuButton } from "@/components/ui/sidebar-menu-button"
 import { Avatar } from "@/components/ui/avatar"
 
 const navItems = [
-  { label: "Requests", icon: ListCheck, path: "/dashboard/requests" },
-  { label: "Employees", icon: Users, path: "/dashboard/employees" },
-  { label: "Calendar", icon: Calendar, path: "/dashboard/calendar" },
-  { label: "Time-off setup", icon: FileClock, path: "/dashboard/time-off-setup" },
-  { label: "Settings", icon: Settings, path: "/dashboard/settings" },
+  { label: "Requests", icon: ListCheck, path: "/requests" },
+  { label: "Employees", icon: Users, path: "/employees" },
+  { label: "Calendar", icon: Calendar, path: "/calendar" },
+  { label: "Time-off setup", icon: FileClock, path: "/time-off-setup" },
+  { label: "Settings", icon: Settings, path: "/settings" },
 ]
 
 export function Sidebar() {

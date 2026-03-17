@@ -19,7 +19,7 @@ export function EditEmployeePage() {
   useEffect(() => {
     if (isError) {
       addToast({ title: "Employee not found", description: "Could not load employee details" })
-      navigate("/dashboard/employees")
+      navigate("/employees")
     }
   }, [isError, navigate])
 
@@ -53,7 +53,7 @@ export function EditEmployeePage() {
       title: "Changes saved successfully",
       description: "Employee details have been updated",
     })
-    navigate("/dashboard/employees")
+    navigate("/employees")
   }
 
   if (loading) {
@@ -62,7 +62,7 @@ export function EditEmployeePage() {
         <div className="flex items-center gap-2 border-b border-border px-4 h-[60px] shrink-0">
           <button
             className="flex items-center justify-center size-7 rounded-[10px] shrink-0 text-foreground hover:bg-accent transition-colors"
-            onClick={() => navigate("/dashboard/employees")}
+            onClick={() => navigate("/employees")}
           >
             <Users className="size-4" />
           </button>
@@ -71,7 +71,7 @@ export function EditEmployeePage() {
           </div>
           <BreadcrumbItem
             text="Employees"
-            onClick={() => navigate("/dashboard/employees")}
+            onClick={() => navigate("/employees")}
           />
           <ChevronRight className="size-4 text-muted-foreground shrink-0" />
           <BreadcrumbItem
@@ -109,7 +109,7 @@ export function EditEmployeePage() {
       <div className="flex items-center gap-2 border-b border-border px-4 h-[60px] shrink-0">
         <button
           className="flex items-center justify-center size-7 rounded-[10px] shrink-0 text-foreground hover:bg-accent transition-colors"
-          onClick={() => navigate("/dashboard/employees")}
+          onClick={() => navigate("/employees")}
         >
           <Users className="size-4" />
         </button>
@@ -118,7 +118,7 @@ export function EditEmployeePage() {
         </div>
         <BreadcrumbItem
           text="Employees"
-          onClick={() => navigate("/dashboard/employees")}
+          onClick={() => navigate("/employees")}
         />
         <ChevronRight className="size-4 text-muted-foreground shrink-0" />
         <BreadcrumbItem
@@ -136,7 +136,7 @@ export function EditEmployeePage() {
           subtitle="Update the personal information and role of your employee"
           submitLabel="Save changes"
           onSubmit={handleSubmit}
-          onCancel={() => navigate("/dashboard/employees")}
+          onCancel={() => navigate("/employees")}
         />
       </div>
     </div>

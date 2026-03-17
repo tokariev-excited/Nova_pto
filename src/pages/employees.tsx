@@ -124,7 +124,7 @@ export function EmployeesPage() {
   ]
 
   function handleAddEmployee() {
-    navigate("/dashboard/employees/new")
+    navigate("/employees/new")
   }
 
   function handleDeactivate(emp: Profile) {
@@ -287,7 +287,7 @@ export function EmployeesPage() {
                   className={`flex hover:bg-muted/50${emp.status === "active" ? " cursor-pointer" : ""}`}
                   onClick={() => {
                     if (emp.status === "active") {
-                      navigate(`/dashboard/employees/${emp.id}/edit`)
+                      navigate(`/employees/${emp.id}/edit`)
                     }
                   }}
                 >
@@ -388,7 +388,7 @@ export function EmployeesPage() {
                                         onClick: () => {
                                           setOpenPopoverId(null)
                                           navigate(
-                                            `/dashboard/employees/${emp.id}/edit`
+                                            `/employees/${emp.id}/edit`
                                           )
                                         },
                                       },

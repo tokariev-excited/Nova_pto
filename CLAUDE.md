@@ -29,8 +29,8 @@ VITE_SUPABASE_ANON_KEY=...
 
 ### Key flows
 
-- `src/App.tsx` — router root. All routes wrapped in `AuthProvider`. `/dashboard` is behind `ProtectedRoute`. Dashboard uses nested routes via `<Outlet />` in `DashboardLayout`.
-- **Auth sequence**: `/login` (enter email) → Supabase sends OTP → `/check-email` (enter 6-digit code) → verify → redirect to `/dashboard`.
+- `src/App.tsx` — router root. All routes wrapped in `AuthProvider`. `/` layout route is behind `ProtectedRoute`. App pages use nested routes via `<Outlet />` in `DashboardLayout`.
+- **Auth sequence**: `/login` (enter email) → Supabase sends OTP → `/check-email` (enter 6-digit code) → verify → redirect to `/requests`.
 - `src/contexts/auth-context.tsx` — central auth state. Exposes `user`, `session`, `workspace`, `profile`, `loading`, `signOut`, `refreshWorkspace`, `refreshProfile`. On first sign-in (`SIGNED_IN` event), runs `runFounderFlow` to auto-provision a workspace and profile for new users.
 - `src/contexts/navigation-guard-context.tsx` — provides `registerGuard`/`unregisterGuard` for pages with unsaved changes (e.g. Settings) to block navigation until confirmed.
 - `src/lib/founder-flow.ts` — first-time user setup: creates a `workspaces` row and a `profiles` row (role: `admin`) in Supabase. Idempotent — skips if profile already exists.
@@ -45,15 +45,18 @@ VITE_SUPABASE_ANON_KEY=...
 
 Migrations live in `supabase/migrations/`. Run `supabase db push` to apply them to a local/remote instance.
 
-### Dashboard routes
+### App routes
 
-Defined in `src/App.tsx`. All page components are lazy-loaded via `React.lazy` + `Suspense`. `/dashboard` redirects to `/dashboard/requests`. Currently implemented pages:
-- `requests` — `RequestsPage` (full UI, Supabase fetch pending)
-- `employees` — `EmployeesPage` (full UI with tabs/search/table, live Supabase data, status-based filtering, action dropdowns with edit/deactivate/activate/delete)
-- `employees/new` — `AddEmployeePage` (uses shared `EmployeeForm` component; calls `inviteEmployee` from employee-service)
-- `employees/:id/edit` — `EditEmployeePage` (uses shared `EmployeeForm` component; loads via `fetchEmployee`, saves via `updateEmployee`)
-- `settings` — `SettingsPage` (fully wired: workspace name/logo, profile name/avatar, departments CRUD, dirty-state guard, Supabase reads/writes)
-- `calendar`, `time-off-setup` — stub `<div>` placeholders
+Defined in `src/App.tsx`. All page components are lazy-loaded via `React.lazy` + `Suspense`. `/` redirects to `/requests`. Currently implemented pages:
+- `/requests` — `RequestsPage` (full UI, Supabase fetch pending)
+- `/employees` — `EmployeesPage` (full UI with tabs/search/table, live Supabase data, status-based filtering, action dropdowns with edit/deactivate/activate/delete)
+- `/employees/new` — `AddEmployeePage` (uses shared `EmployeeForm` component; calls `inviteEmployee` from employee-service)
+- `/employees/:id/edit` — `EditEmployeePage` (uses shared `EmployeeForm` component; loads via `fetchEmployee`, saves via `updateEmployee`)
+- `/settings` — `SettingsPage` (fully wired: workspace name/logo, profile name/avatar, departments CRUD, dirty-state guard, Supabase reads/writes)
+- `/calendar` — stub placeholder
+- `/time-off-setup` — `TimeOffSetupPage` (categories CRUD with drag-and-drop reordering)
+- `/time-off-setup/new` — `AddCategoryPage`
+- `/time-off-setup/:id/edit` — `EditCategoryPage`
 - `/access-restricted` — shown when user lacks permissions
 
 ### Types

@@ -56,7 +56,7 @@ export function AddCategoryPage() {
       title: "Category created",
       description: `${data.name} has been added successfully`,
     })
-    navigate("/dashboard/time-off-setup")
+    navigate("/time-off-setup")
   }
 
   return (
@@ -65,7 +65,7 @@ export function AddCategoryPage() {
       <div className="flex items-center gap-2 border-b border-border px-4 h-[60px] shrink-0">
         <button
           className="flex items-center justify-center size-7 rounded-[10px] shrink-0 text-foreground hover:bg-accent transition-colors"
-          onClick={() => navigate("/dashboard/time-off-setup")}
+          onClick={() => navigate("/time-off-setup")}
         >
           <FileClock className="size-4" />
         </button>
@@ -74,7 +74,7 @@ export function AddCategoryPage() {
         </div>
         <BreadcrumbItem
           text="Time-off setup"
-          onClick={() => navigate("/dashboard/time-off-setup")}
+          onClick={() => navigate("/time-off-setup")}
         />
         <ChevronRight className="size-4 text-muted-foreground shrink-0" />
         <BreadcrumbItem
@@ -92,7 +92,7 @@ export function AddCategoryPage() {
           subtitle="Define the rules and accrual limits for this leave type"
           submitLabel="Add category"
           onSubmit={handleSubmit}
-          onCancel={() => navigate("/dashboard/time-off-setup")}
+          onCancel={() => navigate("/time-off-setup")}
         />
       </div>
     </div>

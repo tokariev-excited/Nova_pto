@@ -45,7 +45,7 @@ export function EditCategoryPage() {
         title: "Category not found",
         description: "Could not load category details",
       })
-      navigate("/dashboard/time-off-setup")
+      navigate("/time-off-setup")
     }
   }, [isError, navigate])
 
@@ -88,7 +88,7 @@ export function EditCategoryPage() {
       title: "Changes saved",
       description: `${data.name} has been updated`,
     })
-    navigate("/dashboard/time-off-setup")
+    navigate("/time-off-setup")
   }
 
   if (isLoading) {
@@ -97,7 +97,7 @@ export function EditCategoryPage() {
         <div className="flex items-center gap-2 border-b border-border px-4 h-[60px] shrink-0">
           <button
             className="flex items-center justify-center size-7 rounded-[10px] shrink-0 text-foreground hover:bg-accent transition-colors"
-            onClick={() => navigate("/dashboard/time-off-setup")}
+            onClick={() => navigate("/time-off-setup")}
           >
             <FileClock className="size-4" />
           </button>
@@ -106,7 +106,7 @@ export function EditCategoryPage() {
           </div>
           <BreadcrumbItem
             text="Time-off setup"
-            onClick={() => navigate("/dashboard/time-off-setup")}
+            onClick={() => navigate("/time-off-setup")}
           />
           <ChevronRight className="size-4 text-muted-foreground shrink-0" />
           <BreadcrumbItem
@@ -129,7 +129,7 @@ export function EditCategoryPage() {
       <div className="flex items-center gap-2 border-b border-border px-4 h-[60px] shrink-0">
         <button
           className="flex items-center justify-center size-7 rounded-[10px] shrink-0 text-foreground hover:bg-accent transition-colors"
-          onClick={() => navigate("/dashboard/time-off-setup")}
+          onClick={() => navigate("/time-off-setup")}
         >
           <FileClock className="size-4" />
         </button>
@@ -138,7 +138,7 @@ export function EditCategoryPage() {
         </div>
         <BreadcrumbItem
           text="Time-off setup"
-          onClick={() => navigate("/dashboard/time-off-setup")}
+          onClick={() => navigate("/time-off-setup")}
         />
         <ChevronRight className="size-4 text-muted-foreground shrink-0" />
         <BreadcrumbItem
@@ -156,7 +156,7 @@ export function EditCategoryPage() {
           subtitle="Update the rules for this time-off category"
           submitLabel="Save changes"
           onSubmit={handleSubmit}
-          onCancel={() => navigate("/dashboard/time-off-setup")}
+          onCancel={() => navigate("/time-off-setup")}
         />
       </div>
     </div>

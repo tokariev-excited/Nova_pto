@@ -39,7 +39,7 @@ export default function App() {
             <Route path="/check-email" element={<CheckEmailPage />} />
             <Route path="/access-restricted" element={<AccessRestrictedPage />} />
             <Route
-              path="/dashboard"
+              path="/"
               element={
                 <ProtectedRoute>
                   <DashboardLayout />
@@ -57,7 +57,7 @@ export default function App() {
               <Route path="time-off-setup/:id/edit" element={<EditCategoryPage />} />
               <Route path="settings" element={<SettingsPage />} />
             </Route>
-            <Route path="*" element={<Navigate to="/dashboard" replace />} />
+            <Route path="*" element={<Navigate to="/requests" replace />} />
           </Routes>
           </Suspense>
         </BrowserRouter>

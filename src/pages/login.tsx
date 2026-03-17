@@ -15,7 +15,7 @@ export function LoginPage() {
   const [error, setError] = useState("")
 
   if (loading) return null
-  if (user) return <Navigate to="/dashboard" replace />
+  if (user) return <Navigate to="/requests" replace />
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()

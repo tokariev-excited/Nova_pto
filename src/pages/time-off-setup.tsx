@@ -89,7 +89,7 @@ export function TimeOffSetupPage() {
   ]
 
   const handleAdd = useCallback(() => {
-    navigate("/dashboard/time-off-setup/new")
+    navigate("/time-off-setup/new")
   }, [navigate])
 
   const handleToggleActive = useCallback(
@@ -203,7 +203,7 @@ export function TimeOffSetupPage() {
                       category={cat}
                       onToggleActive={handleToggleActive}
                       onEdit={(c) =>
-                        navigate(`/dashboard/time-off-setup/${c.id}/edit`)
+                        navigate(`/time-off-setup/${c.id}/edit`)
                       }
                       onDelete={setDeleteTarget}
                     />
