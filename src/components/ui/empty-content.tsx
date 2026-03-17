@@ -52,7 +52,7 @@ function EmptyContent({
   )
 
   const SecondaryBtn = secondaryAction && (
-    <Button variant="outline" onClick={secondaryAction.onClick}>
+    <Button variant="secondary" onClick={secondaryAction.onClick}>
       {secondaryAction.label}
       {secondaryAction.icon && <secondaryAction.icon />}
     </Button>

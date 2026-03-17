@@ -1,0 +1,79 @@
+import { supabase } from "@/lib/supabase"
+import type { Holiday, NagerHoliday, CreateHolidayData } from "@/types/holiday"
+
+export interface ReplaceHolidayItem {
+  name: string
+  date: string
+  country_code: string
+  year: number
+}
+
+const NAGER_BASE_URL = "https://date.nager.at/api/v3"
+
+// ---------------------------------------------------------------------------
+// External API — Nager.Date
+// ---------------------------------------------------------------------------
+
+export async function fetchPublicHolidays(
+  year: number,
+  countryCode: string
+): Promise<NagerHoliday[]> {
+  const res = await fetch(
+    `${NAGER_BASE_URL}/PublicHolidays/${year}/${countryCode}`
+  )
+  if (!res.ok) {
+    throw new Error(
+      `Failed to fetch public holidays for ${countryCode} (${year}): ${res.statusText}`
+    )
+  }
+  return res.json()
+}
+
+// ---------------------------------------------------------------------------
+// Supabase CRUD
+// ---------------------------------------------------------------------------
+
+export async function fetchHolidays(workspaceId: string): Promise<Holiday[]> {
+  const { data, error } = await supabase
+    .from("holidays")
+    .select("*")
+    .eq("workspace_id", workspaceId)
+    .order("date", { ascending: true })
+
+  if (error) throw error
+  return data as Holiday[]
+}
+
+export async function createHoliday(
+  data: CreateHolidayData
+): Promise<Holiday> {
+  const { data: holiday, error } = await supabase
+    .from("holidays")
+    .insert(data)
+    .select()
+    .single()
+
+  if (error) throw error
+  return holiday as Holiday
+}
+
+export async function deleteHoliday(holidayId: string): Promise<void> {
+  const { error } = await supabase
+    .from("holidays")
+    .delete()
+    .eq("id", holidayId)
+
+  if (error) throw error
+}
+
+export async function replaceImportedHolidays(
+  workspaceId: string,
+  holidays: ReplaceHolidayItem[]
+): Promise<void> {
+  const { error } = await supabase.rpc("replace_imported_holidays", {
+    p_workspace_id: workspaceId,
+    p_holidays: holidays,
+  })
+
+  if (error) throw error
+}

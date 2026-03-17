@@ -114,31 +114,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
     }
 
-    // Phase 1: Read initial session from localStorage (lock-free)
-    supabase.auth.getSession().then(async ({ data: { session: initialSession } }) => {
-      if (cancelled) return
-
-      setSession(initialSession)
-      setUser(initialSession?.user ?? null)
-
-      if (initialSession?.user) {
-        try {
-          await fetchProfileAndWorkspace(initialSession.user.id)
-        } catch (err) {
-          console.error("[Auth] Failed to load profile/workspace:", err)
-        }
-      }
-      markResolved()
-    }).catch((err) => {
-      console.error("[Auth] getSession failed:", err)
-      markResolved()
-    })
-
-    // Phase 2: Subscribe to future auth events (skip INITIAL_SESSION)
+    // Single listener — handles INITIAL_SESSION (replaces getSession())
+    // and all subsequent auth events. Avoids navigator lock contention
+    // caused by separate getSession() calls under React StrictMode.
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
         if (cancelled) return
-        if (event === "INITIAL_SESSION") return
 
         setSession(session)
         setUser(session?.user ?? null)

@@ -1,6 +1,6 @@
 import { useState, useCallback } from "react"
 import { useNavigate } from "react-router-dom"
-import { FileClock, Plus } from "lucide-react"
+import { FileClock, Plus, CalendarSearch, CalendarArrowDown, Pencil, Trash2, EllipsisIcon } from "lucide-react"
 import {
   DndContext,
   closestCenter,
@@ -21,8 +21,12 @@ import { Button } from "@/components/ui/button"
 import { Separator } from "@/components/ui/separator"
 import { TabGroup } from "@/components/ui/tab-group"
 import { DataTableHeaderCell } from "@/components/ui/data-table-header-cell"
+import { DataTableCell } from "@/components/ui/data-table-cell"
+import { Badge } from "@/components/ui/badge"
 import { Empty } from "@/components/ui/empty"
 import { BreadcrumbItem } from "@/components/ui/breadcrumb-item"
+import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover"
+import { ComboboxMenu } from "@/components/ui/combobox-menu"
 import {
   AlertDialog,
   AlertDialogContent,
@@ -34,14 +38,17 @@ import {
   AlertDialogAction,
 } from "@/components/ui/alert-dialog"
 import { SortableCategoryRow } from "@/components/sortable-category-row"
+import { ImportHolidayModal } from "@/components/import-holiday-modal"
 import {
   useTimeOffCategories,
   useToggleCategoryActiveMutation,
   useDeleteCategoryMutation,
   useReorderCategoriesMutation,
 } from "@/hooks/use-time-off-categories"
+import { useHolidays, useDeleteHolidayMutation } from "@/hooks/use-holidays"
 import { addToast } from "@/lib/toast"
 import type { TimeOffCategory } from "@/types/time-off-category"
+import type { Holiday } from "@/types/holiday"
 
 type TabValue = "categories" | "holidays"
 
@@ -50,11 +57,18 @@ export function TimeOffSetupPage() {
 
   const [activeTab, setActiveTab] = useState<TabValue>("categories")
   const [deleteTarget, setDeleteTarget] = useState<TimeOffCategory | null>(null)
+  const [deleteHolidayTarget, setDeleteHolidayTarget] = useState<Holiday | null>(null)
+  const [importModalOpen, setImportModalOpen] = useState(false)
+  const [selectedHolidayIds, setSelectedHolidayIds] = useState<Set<string>>(new Set())
+  const [openPopoverId, setOpenPopoverId] = useState<string | null>(null)
 
   const { data: categories = [], isLoading } = useTimeOffCategories()
   const toggleMutation = useToggleCategoryActiveMutation()
   const deleteMutation = useDeleteCategoryMutation()
   const reorderMutation = useReorderCategoriesMutation()
+
+  const { data: holidays = [], isLoading: holidaysLoading } = useHolidays()
+  const deleteHolidayMutation = useDeleteHolidayMutation()
 
   const sensors = useSensors(
     useSensor(PointerSensor),
@@ -85,7 +99,7 @@ export function TimeOffSetupPage() {
       label: "Time-off categories",
       badge: categories.length || undefined,
     },
-    { value: "holidays", label: "Holidays" },
+    { value: "holidays", label: "Holidays", badge: holidays.length || undefined },
   ]
 
   const handleAdd = useCallback(() => {
@@ -122,6 +136,48 @@ export function TimeOffSetupPage() {
     })
   }, [deleteTarget, deleteMutation])
 
+  // Holiday helpers
+  const formatHolidayDate = (dateStr: string): string => {
+    const date = new Date(dateStr + "T00:00:00")
+    return date.toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" })
+  }
+
+  const getDayOfWeek = (dateStr: string): string => {
+    const date = new Date(dateStr + "T00:00:00")
+    return date.toLocaleDateString("en-US", { weekday: "long" })
+  }
+
+  const allSelected = holidays.length > 0 && selectedHolidayIds.size === holidays.length
+  const someSelected = selectedHolidayIds.size > 0 && !allSelected
+
+  const handleToggleAll = () => {
+    if (allSelected) setSelectedHolidayIds(new Set())
+    else setSelectedHolidayIds(new Set(holidays.map((h) => h.id)))
+  }
+
+  const handleToggleOne = (id: string) => {
+    setSelectedHolidayIds((prev) => {
+      const next = new Set(prev)
+      next.has(id) ? next.delete(id) : next.add(id)
+      return next
+    })
+  }
+
+  const handleDeleteHoliday = useCallback(() => {
+    if (!deleteHolidayTarget) return
+    deleteHolidayMutation.mutate(deleteHolidayTarget.id, {
+      onSuccess: () => {
+        addToast({ title: "Holiday deleted", description: `${deleteHolidayTarget.name} has been deleted` })
+        setDeleteHolidayTarget(null)
+        setSelectedHolidayIds((prev) => {
+          const next = new Set(prev)
+          next.delete(deleteHolidayTarget.id)
+          return next
+        })
+      },
+    })
+  }, [deleteHolidayTarget, deleteHolidayMutation])
+
   return (
     <div className="flex flex-col size-full">
       {/* Header */}
@@ -136,10 +192,20 @@ export function TimeOffSetupPage() {
           text="Time-off setup"
           className="flex-1 text-foreground font-medium"
         />
-        <Button onClick={handleAdd}>
-          <Plus />
-          Add time-off category
-        </Button>
+        {activeTab === "categories" ? (
+          <Button onClick={handleAdd}>
+            <Plus />
+            Add time-off category
+          </Button>
+        ) : (
+          <div className="flex items-center gap-3">
+            <Button variant="secondary">Create holiday</Button>
+            <Button onClick={() => setImportModalOpen(true)}>
+              <CalendarArrowDown />
+              Import holiday calendar
+            </Button>
+          </div>
+        )}
       </div>
 
       {/* Body */}
@@ -213,11 +279,155 @@ export function TimeOffSetupPage() {
             )}
           </div>
         ) : (
-          /* Holidays placeholder */
-          <div className="flex items-center justify-center py-16 rounded-lg border border-border">
-            <p className="text-sm text-muted-foreground">
-              Holidays management coming soon
-            </p>
+          /* Holidays table */
+          <div className="rounded-xl border border-border overflow-hidden">
+            {/* Header row */}
+            <div className="flex bg-secondary">
+              <DataTableHeaderCell
+                type="checkbox"
+                className="w-[28px] pl-3 pr-0"
+                checked={allSelected ? true : someSelected ? "indeterminate" : false}
+                onCheckedChange={handleToggleAll}
+              />
+              <DataTableHeaderCell type="text" label="Holiday" className="flex-1" />
+              <DataTableHeaderCell type="text" label="Date" className="flex-1" />
+              <DataTableHeaderCell type="text" label="Type" className="flex-1" />
+              <DataTableHeaderCell type="text" className="w-14" />
+            </div>
+
+            {/* Body */}
+            {holidaysLoading && holidays.length === 0 ? (
+              <div className="flex items-center justify-center py-16">
+                <p className="text-sm text-muted-foreground">Loading...</p>
+              </div>
+            ) : holidays.length === 0 ? (
+              <div className="flex items-center justify-center py-12">
+                <Empty
+                  media={{ type: "icon", icon: CalendarSearch }}
+                  title="No holidays added yet"
+                  description="Import official public holidays for your team's locations or create custom non-working days to ensure accurate time-off calculations"
+                  content={{
+                    layout: "two-horizontal",
+                    primaryAction: {
+                      label: "Import holiday calendar",
+                      icon: CalendarArrowDown,
+                      onClick: () => setImportModalOpen(true),
+                    },
+                    secondaryAction: {
+                      label: "Create holiday",
+                    },
+                  }}
+                />
+              </div>
+            ) : (
+              holidays.map((holiday) => (
+                <div key={holiday.id} className="flex">
+                  <DataTableCell
+                    type="checkbox"
+                    size="md"
+                    className="w-[28px] pl-3 pr-0"
+                    checked={selectedHolidayIds.has(holiday.id)}
+                    onCheckedChange={() => handleToggleOne(holiday.id)}
+                  />
+                  <DataTableCell
+                    type="text"
+                    size="md"
+                    label={holiday.name}
+                    labelClassName="font-medium"
+                    className="flex-1"
+                  />
+                  <DataTableCell
+                    type="text-description"
+                    size="md"
+                    label={formatHolidayDate(holiday.date)}
+                    description={getDayOfWeek(holiday.date)}
+                    className="flex-1"
+                  />
+                  <DataTableCell
+                    type="badge"
+                    size="md"
+                    className="flex-1"
+                    badgeNode={
+                      <Badge variant="secondary">
+                        {holiday.is_custom ? "Created" : "Imported"}
+                      </Badge>
+                    }
+                  />
+                  <div
+                    className="relative flex items-center justify-center w-14 h-[72px] px-3 py-2"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    <Popover
+                      open={openPopoverId === holiday.id}
+                      onOpenChange={(open) =>
+                        setOpenPopoverId(open ? holiday.id : null)
+                      }
+                    >
+                      <PopoverTrigger asChild>
+                        <Button variant="ghost" size="icon-sm">
+                          <EllipsisIcon className="size-4" />
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent
+                        align="end"
+                        className="p-0 border-0 shadow-none"
+                      >
+                        <ComboboxMenu
+                          groups={
+                            holiday.is_custom
+                              ? [
+                                  {
+                                    items: [
+                                      {
+                                        type: "icon",
+                                        icon: <Pencil className="size-4" />,
+                                        label: "Edit holiday",
+                                        onClick: () => {
+                                          setOpenPopoverId(null)
+                                        },
+                                      },
+                                    ],
+                                  },
+                                  {
+                                    items: [
+                                      {
+                                        type: "icon",
+                                        variant: "destructive",
+                                        icon: <Trash2 className="size-4" />,
+                                        label: "Delete",
+                                        onClick: () => {
+                                          setOpenPopoverId(null)
+                                          setDeleteHolidayTarget(holiday)
+                                        },
+                                      },
+                                    ],
+                                  },
+                                ]
+                              : [
+                                  {
+                                    items: [
+                                      {
+                                        type: "icon",
+                                        variant: "destructive",
+                                        icon: <Trash2 className="size-4" />,
+                                        label: "Delete",
+                                        onClick: () => {
+                                          setOpenPopoverId(null)
+                                          setDeleteHolidayTarget(holiday)
+                                        },
+                                      },
+                                    ],
+                                  },
+                                ]
+                          }
+                        />
+                      </PopoverContent>
+                    </Popover>
+                    <div className="absolute bottom-0 left-0 right-0 border-b border-border" />
+                  </div>
+                </div>
+              ))
+            )}
           </div>
         )}
       </div>
@@ -249,6 +459,36 @@ export function TimeOffSetupPage() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Delete holiday confirmation dialog */}
+      <AlertDialog
+        open={!!deleteHolidayTarget}
+        onOpenChange={(open) => {
+          if (!open) setDeleteHolidayTarget(null)
+        }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete holiday</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete{" "}
+              {deleteHolidayTarget ? deleteHolidayTarget.name : ""}? This action
+              cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              onClick={handleDeleteHoliday}
+            >
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <ImportHolidayModal open={importModalOpen} onOpenChange={setImportModalOpen} />
     </div>
   )
 }

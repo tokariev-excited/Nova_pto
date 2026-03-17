@@ -18,3 +18,8 @@ export const timeOffCategoryKeys = {
   list: (workspaceId: string) => ["timeOffCategories", workspaceId, "list"] as const,
   detail: (categoryId: string) => ["timeOffCategories", "detail", categoryId] as const,
 }
+
+export const holidayKeys = {
+  all: (workspaceId: string) => ["holidays", workspaceId] as const,
+  list: (workspaceId: string) => ["holidays", workspaceId, "list"] as const,
+}
