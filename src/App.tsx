@@ -6,6 +6,7 @@ import { AuthProvider } from "@/contexts/auth-context"
 import { ProtectedRoute } from "@/components/protected-route"
 import { DashboardLayout } from "@/components/layout/DashboardLayout"
 import { supabase } from "@/lib/supabase"
+import { Toaster } from "@/components/ui/toaster"
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -82,6 +83,7 @@ export default function App() {
           </Routes>
           </Suspense>
         </BrowserRouter>
+        <Toaster />
       </AuthProvider>
       <ReactQueryDevtools initialIsOpen={false} />
     </QueryClientProvider>

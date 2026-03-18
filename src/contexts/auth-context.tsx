@@ -2,6 +2,7 @@ import { createContext, useEffect, useState, useMemo, useCallback, useRef, type 
 import type { User, Session } from "@supabase/supabase-js"
 import { supabase } from "@/lib/supabase"
 import { runFounderFlow } from "@/lib/founder-flow"
+import { addToast } from "@/lib/toast"
 import { AUTH_SAFETY_TIMEOUT } from "@/lib/constants"
 import type { EmployeeStatus } from "@/types/employee"
 
@@ -191,6 +192,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                 console.error("[Auth] Retry after token refresh failed:", err.message)
                 if (!cancelled) {
                   setAuthError("Unable to load your account data. Please check your connection and try again.")
+                  addToast({
+                    title: "Connection issue",
+                    description: "Unable to refresh your session. Please check your connection.",
+                    variant: "error",
+                  })
                 }
                 markResolved()
               })
@@ -226,6 +232,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           // TanStack Query hooks (enabled: !!workspace) to become disabled.
           if (event === "SIGNED_OUT" || event === "INITIAL_SESSION") {
             if (workspaceLoadedRef.current) {
+              if (event === "SIGNED_OUT") {
+                addToast({
+                  title: "Session ended",
+                  description: "You've been signed out. Please log in again.",
+                  variant: "error",
+                })
+              }
               setProfile(null)
               setWorkspace(null)
               setAuthError(null)

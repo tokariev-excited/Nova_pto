@@ -1,4 +1,4 @@
-export type Toast = { id: string; title: string; description?: string; duration?: number }
+export type Toast = { id: string; title: string; description?: string; duration?: number; variant?: "success" | "error" }
 type Listener = (toasts: Toast[]) => void
 
 let toasts: Toast[] = []

@@ -3,7 +3,6 @@ import { Outlet } from "react-router-dom"
 import { Sidebar } from "@/components/layout/Sidebar"
 import { NavigationGuardProvider } from "@/contexts/navigation-guard-context"
 import { TooltipProvider } from "@/components/ui/tooltip"
-import { Toaster } from "@/components/ui/toaster"
 import { ErrorBoundary } from "@/components/error-boundary"
 
 export function DashboardLayout() {
@@ -20,7 +19,6 @@ export function DashboardLayout() {
             </ErrorBoundary>
           </main>
         </div>
-        <Toaster />
       </TooltipProvider>
     </NavigationGuardProvider>
   )
