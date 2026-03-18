@@ -1,6 +1,7 @@
 import { useState } from "react"
 import { useNavigate, useLocation, Navigate } from "react-router-dom"
 import { supabase } from "@/lib/supabase"
+import { getSiteUrl } from "@/lib/site-url"
 import { useAuth } from "@/hooks/use-auth"
 import { AuthLayout } from "@/components/auth-layout"
 import { NovaLogo } from "@/components/nova-logo"
@@ -21,7 +22,10 @@ export function CheckEmailPage() {
   async function handleResend() {
     setResending(true)
     try {
-      const { error } = await supabase.auth.signInWithOtp({ email: email! })
+      const { error } = await supabase.auth.signInWithOtp({
+        email: email!,
+        options: { emailRedirectTo: `${getSiteUrl()}/auth/callback` },
+      })
       if (error) throw error
       addToast({ title: "Email resent", description: `A new login link was sent to ${email}` })
     } catch (err) {

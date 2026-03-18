@@ -49,9 +49,10 @@ export interface InviteEmployeeData {
 }
 
 export async function inviteEmployee(data: InviteEmployeeData) {
+  const { getSiteUrl } = await import("@/lib/site-url")
   const { data: result, error } = await supabase.functions.invoke(
     "invite-employee",
-    { body: data }
+    { body: { ...data, redirect_url: `${getSiteUrl()}/auth/callback` } }
   )
 
   if (error) throw error

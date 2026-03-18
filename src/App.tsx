@@ -34,6 +34,7 @@ function AuthQueryBridge() {
   return null
 }
 
+const AuthCallbackPage = lazy(() => import("@/pages/auth-callback").then(m => ({ default: m.AuthCallbackPage })))
 const LoginPage = lazy(() => import("@/pages/login").then(m => ({ default: m.LoginPage })))
 const CheckEmailPage = lazy(() => import("@/pages/otp-verification").then(m => ({ default: m.CheckEmailPage })))
 const RequestsPage = lazy(() => import("@/pages/requests").then(m => ({ default: m.RequestsPage })))
@@ -54,6 +55,7 @@ export default function App() {
         <BrowserRouter>
           <Suspense fallback={null}>
           <Routes>
+            <Route path="/auth/callback" element={<AuthCallbackPage />} />
             <Route path="/login" element={<LoginPage />} />
             <Route path="/check-email" element={<CheckEmailPage />} />
             <Route path="/access-restricted" element={<AccessRestrictedPage />} />

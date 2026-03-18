@@ -66,6 +66,7 @@ Deno.serve(async (req) => {
       location,
       hire_date,
       avatar_url,
+      redirect_url,
     } = await req.json()
 
     if (!email) {
@@ -79,8 +80,12 @@ Deno.serve(async (req) => {
     const adminClient = createClient(supabaseUrl, supabaseServiceKey)
 
     // Invite the user via email (creates auth user + sends invite)
+    const inviteOptions: Record<string, string> = {}
+    if (redirect_url) {
+      inviteOptions.redirectTo = redirect_url
+    }
     const { data: inviteData, error: inviteError } =
-      await adminClient.auth.admin.inviteUserByEmail(email)
+      await adminClient.auth.admin.inviteUserByEmail(email, inviteOptions)
 
     if (inviteError) {
       return new Response(

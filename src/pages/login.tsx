@@ -1,6 +1,7 @@
 import { useState } from "react"
 import { useNavigate, Navigate } from "react-router-dom"
 import { supabase } from "@/lib/supabase"
+import { getSiteUrl } from "@/lib/site-url"
 import { useAuth } from "@/hooks/use-auth"
 import { AuthLayout } from "@/components/auth-layout"
 import { NovaLogo } from "@/components/nova-logo"
@@ -21,7 +22,10 @@ export function LoginPage() {
     e.preventDefault()
     setError("")
     setSubmitting(true)
-    const { error } = await supabase.auth.signInWithOtp({ email })
+    const { error } = await supabase.auth.signInWithOtp({
+      email,
+      options: { emailRedirectTo: `${getSiteUrl()}/auth/callback` },
+    })
     setSubmitting(false)
     if (error) { setError(error.message); return }
     navigate("/check-email", { state: { email } })
