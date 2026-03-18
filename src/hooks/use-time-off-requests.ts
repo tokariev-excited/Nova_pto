@@ -3,6 +3,7 @@ import { useAuth } from "@/hooks/use-auth"
 import {
   fetchTimeOffRequests,
   fetchEmployeeBalance,
+  fetchEmployeeBalances,
   createTimeOffRecord,
   updateTimeOffRequestStatus,
   fetchActiveEmployeesForCombobox,
@@ -33,6 +34,14 @@ export function useEmployeeBalance(
   })
 }
 
+export function useEmployeeBalances(employeeId: string | undefined) {
+  return useQuery({
+    queryKey: employeeBalanceKeys.allForEmployee(employeeId ?? ""),
+    queryFn: () => fetchEmployeeBalances(employeeId!),
+    enabled: !!employeeId,
+  })
+}
+
 export function useCreateTimeOffRecordMutation() {
   const queryClient = useQueryClient()
   const { workspace } = useAuth()
@@ -44,7 +53,7 @@ export function useCreateTimeOffRecordMutation() {
         queryClient.invalidateQueries({ queryKey: timeOffRequestKeys.all(workspace.id) })
       }
       queryClient.invalidateQueries({
-        queryKey: employeeBalanceKeys.single(variables.employee_id, variables.category_id),
+        queryKey: employeeBalanceKeys.allForEmployee(variables.employee_id),
       })
     },
   })

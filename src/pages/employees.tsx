@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react"
+import { useState, useMemo, useEffect } from "react"
 import { useNavigate } from "react-router-dom"
 import {
   Users,
@@ -19,6 +19,7 @@ import { DataTableHeaderCell } from "@/components/ui/data-table-header-cell"
 import { DataTableCell } from "@/components/ui/data-table-cell"
 import { Badge } from "@/components/ui/badge"
 import { Empty } from "@/components/ui/empty"
+import { DataTablePagination } from "@/components/ui/data-table-pagination"
 import { Input } from "@/components/ui/input"
 import { BreadcrumbItem } from "@/components/ui/breadcrumb-item"
 import {
@@ -68,6 +69,9 @@ export function EmployeesPage() {
   const [activeTab, setActiveTab] = useState<TabValue>("active")
   const [searchQuery, setSearchQuery] = useState("")
 
+  const [pageSize, setPageSize] = useState(10)
+  const [currentPage, setCurrentPage] = useState(1)
+
   // Dropdown state
   const [openPopoverId, setOpenPopoverId] = useState<string | null>(null)
 
@@ -113,6 +117,17 @@ export function EmployeesPage() {
     }
     return adjusted
   }, [counts, currentProfile])
+
+  useEffect(() => {
+    setCurrentPage(1)
+  }, [activeTab, searchQuery])
+
+  const totalPages = Math.max(1, Math.ceil(filteredEmployees.length / pageSize))
+  const safePage = Math.min(currentPage, totalPages)
+  const paginatedEmployees = useMemo(
+    () => filteredEmployees.slice((safePage - 1) * pageSize, safePage * pageSize),
+    [filteredEmployees, safePage, pageSize]
+  )
 
   const tabItems = [
     { value: "active", label: "Active", badge: adjustedCounts.active || undefined },
@@ -210,6 +225,7 @@ export function EmployeesPage() {
         </div>
 
         {/* Table */}
+        <div>
         <div className="rounded-lg border border-border overflow-hidden">
           {/* Header row */}
           <div className="flex bg-secondary">
@@ -297,7 +313,7 @@ export function EmployeesPage() {
             </div>
           ) : (
             <div>
-              {filteredEmployees.map((emp) => (
+              {paginatedEmployees.map((emp) => (
                 <div
                   key={emp.id}
                   className={`flex hover:bg-muted/50${emp.status === "active" ? " cursor-pointer" : ""}`}
@@ -481,6 +497,26 @@ export function EmployeesPage() {
               ))}
             </div>
           )}
+        </div>
+
+        {filteredEmployees.length > 10 && (
+          <DataTablePagination
+            type="detailed"
+            selectedCount={0}
+            totalRows={filteredEmployees.length}
+            rowsPerPage={String(pageSize)}
+            onRowsPerPageChange={(v) => { setPageSize(Number(v)); setCurrentPage(1) }}
+            rowsPerPageOptions={["10", "20", "30", "50"]}
+            currentPage={safePage}
+            totalPages={totalPages}
+            canPrevious={safePage > 1}
+            canNext={safePage < totalPages}
+            onFirstPage={() => setCurrentPage(1)}
+            onPrevious={() => setCurrentPage((p) => Math.max(1, p - 1))}
+            onNext={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+            onLastPage={() => setCurrentPage(totalPages)}
+          />
+        )}
         </div>
       </div>
 

@@ -28,6 +28,18 @@ export async function fetchEmployeeBalance(
   return data as EmployeeBalance | null
 }
 
+export async function fetchEmployeeBalances(
+  employeeId: string
+): Promise<EmployeeBalance[]> {
+  const { data, error } = await supabase
+    .from("employee_balances")
+    .select("*")
+    .eq("employee_id", employeeId)
+
+  if (error) throw error
+  return (data ?? []) as EmployeeBalance[]
+}
+
 export interface CreateTimeOffRecordParams {
   workspace_id: string
   employee_id: string

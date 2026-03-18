@@ -118,7 +118,7 @@ function SelectItem({
         "focus:bg-accent focus:text-accent-foreground",
         "data-[disabled]:cursor-not-allowed data-[disabled]:opacity-50",
         "[&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4 [&_svg:not([class*='text-'])]:text-muted-foreground",
-        "*:[span]:last:flex *:[span]:last:items-center *:[span]:last:gap-2",
+        "*:[span]:last:flex *:[span]:last:items-center *:[span]:last:gap-2 [&>span:last-child]:flex-1",
         className
       )}
       {...props}

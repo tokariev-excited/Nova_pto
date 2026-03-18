@@ -32,6 +32,8 @@ export const timeOffRequestKeys = {
 export const employeeBalanceKeys = {
   single: (employeeId: string, categoryId: string) =>
     ["employeeBalances", employeeId, categoryId] as const,
+  allForEmployee: (employeeId: string) =>
+    ["employeeBalances", employeeId] as const,
 }
 
 export const activeEmployeeKeys = {

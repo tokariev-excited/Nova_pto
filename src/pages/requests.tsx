@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react"
+import { useState, useMemo, useEffect } from "react"
 import { CalendarClock, CircleCheck, CircleX, ListCheck, ListX, Search } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
@@ -8,13 +8,16 @@ import { DataTableHeaderCell } from "@/components/ui/data-table-header-cell"
 import { DataTableCell } from "@/components/ui/data-table-cell"
 import { Badge } from "@/components/ui/badge"
 import { Empty } from "@/components/ui/empty"
+import { DataTablePagination } from "@/components/ui/data-table-pagination"
 import { Input } from "@/components/ui/input"
 import { BreadcrumbItem } from "@/components/ui/breadcrumb-item"
 import { CreateTimeOffRecordModal } from "@/components/create-time-off-record-modal"
 import { useTimeOffRequests, useUpdateRequestStatusMutation } from "@/hooks/use-time-off-requests"
 import { useTimeOffCategories } from "@/hooks/use-time-off-categories"
+import { useAuth } from "@/hooks/use-auth"
 import { getInitials } from "@/lib/utils"
 import { addToast } from "@/lib/toast"
+import { generateReport } from "@/lib/generate-report"
 import type { TimeOffRequest, TimeOffStatus } from "@/types/time-off-request"
 
 type TabValue = "all" | TimeOffStatus
@@ -59,7 +62,11 @@ export function RequestsPage() {
   const [activeTab, setActiveTab] = useState<TabValue>("all")
   const [searchQuery, setSearchQuery] = useState("")
   const [createModalOpen, setCreateModalOpen] = useState(false)
+  const [downloading, setDownloading] = useState(false)
+  const [pageSize, setPageSize] = useState(10)
+  const [currentPage, setCurrentPage] = useState(1)
 
+  const { workspace } = useAuth()
   const { data: requests = [], isLoading, isError, refetch } = useTimeOffRequests()
   const { data: categories = [] } = useTimeOffCategories()
   const statusMutation = useUpdateRequestStatusMutation()
@@ -96,6 +103,17 @@ export function RequestsPage() {
     return result
   }, [requests, activeTab, searchQuery])
 
+  useEffect(() => {
+    setCurrentPage(1)
+  }, [activeTab, searchQuery])
+
+  const totalPages = Math.max(1, Math.ceil(filteredRequests.length / pageSize))
+  const safePage = Math.min(currentPage, totalPages)
+  const paginatedRequests = useMemo(
+    () => filteredRequests.slice((safePage - 1) * pageSize, safePage * pageSize),
+    [filteredRequests, safePage, pageSize]
+  )
+
   const tabItems = [
     { value: "all", label: "All requests", badge: counts.all || undefined },
     { value: "pending", label: "Pending", badge: counts.pending || undefined },
@@ -105,6 +123,19 @@ export function RequestsPage() {
 
   function handleCreateRecord() {
     setCreateModalOpen(true)
+  }
+
+  async function handleDownloadReport() {
+    if (!workspace) return
+    setDownloading(true)
+    try {
+      await generateReport(workspace.id)
+      addToast({ title: "Report downloaded", description: "Your time-off report has been saved" })
+    } catch {
+      addToast({ title: "Download failed", description: "Something went wrong generating the report" })
+    } finally {
+      setDownloading(false)
+    }
   }
 
   function getCategoryDisplay(req: TimeOffRequest) {
@@ -155,7 +186,7 @@ export function RequestsPage() {
         </div>
         <BreadcrumbItem text="Requests" className="flex-1 text-foreground font-medium" />
         <div className="flex items-center gap-3">
-          <Button variant="secondary">Download report</Button>
+          <Button variant="secondary" loading={downloading} onClick={handleDownloadReport}>Download report</Button>
           <Button onClick={handleCreateRecord}>
             <CalendarClock />
             Create time-off record
@@ -184,6 +215,7 @@ export function RequestsPage() {
         </div>
 
         {/* Table */}
+        <div>
         <div className="rounded-lg border border-border overflow-hidden">
           {/* Header row */}
           <div className="flex bg-secondary">
@@ -242,7 +274,7 @@ export function RequestsPage() {
             </div>
           ) : (
             <div>
-              {filteredRequests.map((req) => {
+              {paginatedRequests.map((req) => {
                 const days = calculateDays(req.start_date, req.end_date)
                 const nameParts = req.employee_name.split(" ")
                 const initials = getInitials(nameParts[0], nameParts.slice(1).join(" "))
@@ -321,6 +353,26 @@ export function RequestsPage() {
               })}
             </div>
           )}
+        </div>
+
+        {filteredRequests.length > 10 && (
+          <DataTablePagination
+            type="detailed"
+            selectedCount={0}
+            totalRows={filteredRequests.length}
+            rowsPerPage={String(pageSize)}
+            onRowsPerPageChange={(v) => { setPageSize(Number(v)); setCurrentPage(1) }}
+            rowsPerPageOptions={["10", "20", "30", "50"]}
+            currentPage={safePage}
+            totalPages={totalPages}
+            canPrevious={safePage > 1}
+            canNext={safePage < totalPages}
+            onFirstPage={() => setCurrentPage(1)}
+            onPrevious={() => setCurrentPage((p) => Math.max(1, p - 1))}
+            onNext={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+            onLastPage={() => setCurrentPage(totalPages)}
+          />
+        )}
         </div>
       </div>
 

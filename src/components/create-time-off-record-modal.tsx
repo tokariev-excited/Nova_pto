@@ -23,10 +23,12 @@ import { useAuth } from "@/hooks/use-auth"
 import { useTimeOffCategories } from "@/hooks/use-time-off-categories"
 import {
   useActiveEmployees,
-  useEmployeeBalance,
+  useEmployeeBalances,
   useCreateTimeOffRecordMutation,
 } from "@/hooks/use-time-off-requests"
 import { addToast } from "@/lib/toast"
+import type { TimeOffCategory } from "@/types/time-off-category"
+import type { EmployeeBalance } from "@/types/employee-balance"
 
 interface CreateTimeOffRecordModalProps {
   open: boolean
@@ -38,6 +40,28 @@ function formatDateToString(date: Date): string {
   const m = String(date.getMonth() + 1).padStart(2, "0")
   const d = String(date.getDate()).padStart(2, "0")
   return `${y}-${m}-${d}`
+}
+
+function getBalanceText(
+  cat: TimeOffCategory,
+  balanceMap: Map<string, EmployeeBalance>
+): string {
+  if (cat.accrual_method === "unlimited") return "Unlimited"
+  const entry = balanceMap.get(cat.id)
+  if (entry) return `${entry.remaining_days} days`
+  return "—"
+}
+
+function isItemDisabled(
+  cat: TimeOffCategory,
+  employeeId: string | undefined,
+  balancesLoading: boolean,
+  balanceMap: Map<string, EmployeeBalance>
+): boolean {
+  if (!employeeId || balancesLoading) return false
+  if (cat.accrual_method === "unlimited") return false
+  const entry = balanceMap.get(cat.id)
+  return entry != null && entry.remaining_days <= 0
 }
 
 export function CreateTimeOffRecordModal({
@@ -66,10 +90,13 @@ export function CreateTimeOffRecordModal({
     }
   }, [open])
 
-  // Fetch balance when both employee and category are selected
-  const { data: balance, isLoading: balanceLoading } = useEmployeeBalance(
-    employeeId,
-    categoryId
+  // Fetch all balances for the selected employee
+  const { data: balances = [], isLoading: balancesLoading } =
+    useEmployeeBalances(employeeId)
+
+  const balanceMap = useMemo(
+    () => new Map(balances.map((b) => [b.category_id, b])),
+    [balances]
   )
 
   // Filter to active categories only
@@ -78,7 +105,7 @@ export function CreateTimeOffRecordModal({
     [categories]
   )
 
-  // Find the selected category for display
+  // Find the selected category for validation
   const selectedCategory = useMemo(
     () => activeCategories.find((c) => c.id === categoryId),
     [activeCategories, categoryId]
@@ -94,11 +121,23 @@ export function CreateTimeOffRecordModal({
 
   // Validation
   const hasRequiredFields = !!employeeId && !!categoryId && !!startDate && !!endDate
-  const isUnlimited = selectedCategory?.accrual_method === 'unlimited'
+  const isUnlimited = selectedCategory?.accrual_method === "unlimited"
+  const selectedBalance = categoryId ? balanceMap.get(categoryId) : undefined
   const insufficientBalance =
-    hasRequiredFields && !isUnlimited && totalDays != null && balance != null && totalDays > balance.remaining_days
-  const noBalance = hasRequiredFields && !balanceLoading && balance == null && !!employeeId && !!categoryId
-  const isValid = hasRequiredFields && totalDays != null && totalDays > 0 && !insufficientBalance && !noBalance && !balanceLoading
+    hasRequiredFields &&
+    !isUnlimited &&
+    totalDays != null &&
+    selectedBalance != null &&
+    totalDays > selectedBalance.remaining_days
+  const noBalance =
+    hasRequiredFields && !balancesLoading && selectedBalance == null && !isUnlimited
+  const isValid =
+    hasRequiredFields &&
+    totalDays != null &&
+    totalDays > 0 &&
+    !insufficientBalance &&
+    !noBalance &&
+    !balancesLoading
 
   function handleSubmit() {
     if (!isValid || !workspace || !employeeId || !categoryId || !startDate || !endDate) return
@@ -153,44 +192,33 @@ export function CreateTimeOffRecordModal({
           </Field>
 
           {/* Time-off category */}
-          <div className="flex flex-col gap-2">
-            <Field label="Time-off category">
-              <Select
-                value={categoryId}
-                onValueChange={setCategoryId}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select category" />
-                </SelectTrigger>
-                <SelectContent>
-                  {activeCategories.map((cat) => (
-                    <SelectItem key={cat.id} value={cat.id}>
-                      {cat.emoji ? `${cat.name} ${cat.emoji}` : cat.name}
+          <Field label="Time-off category">
+            <Select
+              value={categoryId}
+              onValueChange={setCategoryId}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Select category" />
+              </SelectTrigger>
+              <SelectContent>
+                {activeCategories.map((cat) => {
+                  const disabled = isItemDisabled(cat, employeeId, balancesLoading, balanceMap)
+                  return (
+                    <SelectItem key={cat.id} value={cat.id} disabled={disabled}>
+                      <span className="flex w-full items-center justify-between gap-2">
+                        <span className="font-medium">{cat.emoji ? `${cat.name} ${cat.emoji}` : cat.name}</span>
+                        {employeeId && (
+                          <span className="ml-2 shrink-0 font-normal text-muted-foreground text-xs">
+                            {balancesLoading ? "..." : getBalanceText(cat, balanceMap)}
+                          </span>
+                        )}
+                      </span>
                     </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </Field>
-            {/* Balance display */}
-            {employeeId && categoryId && (
-              <p className="text-sm leading-5 tracking-tight text-muted-foreground">
-                {balanceLoading ? (
-                  "Loading balance..."
-                ) : balance ? (
-                  <>
-                    {selectedCategory?.name ?? "Category"} balance:{" "}
-                    <span className="font-medium text-foreground">
-                      {isUnlimited ? "Unlimited" : `${balance.remaining_days} days`}
-                    </span>
-                  </>
-                ) : (
-                  <span className="text-destructive">
-                    No balance allocated for this category
-                  </span>
-                )}
-              </p>
-            )}
-          </div>
+                  )
+                })}
+              </SelectContent>
+            </Select>
+          </Field>
 
           {/* Dates row */}
           <div className="flex flex-col gap-2">
@@ -222,7 +250,7 @@ export function CreateTimeOffRecordModal({
             {/* Insufficient balance warning */}
             {insufficientBalance && (
               <p className="text-sm leading-5 tracking-tight text-destructive">
-                Insufficient balance ({balance!.remaining_days} days available)
+                Insufficient balance ({selectedBalance!.remaining_days} days available)
               </p>
             )}
           </div>

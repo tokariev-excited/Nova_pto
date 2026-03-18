@@ -25,7 +25,8 @@
       "Bash(find /Users/yaroslavtokariev/Desktop/Excited/Figma-To-Code-Projects/Nova_pto -type f -name \"*.tsx\" -o -name \"*.ts\" | grep -E \"\\(\\\\.tsx?$\\)\" | head -30)",
       "Bash(git diff:*)",
       "Bash(/tmp/analysis.txt:*)",
-      "Read(//tmp/**)"
+      "Read(//tmp/**)",
+      "Bash(find /Users/yaroslavtokariev/Desktop/Excited/Figma-To-Code-Projects/Nova_pto -name \".env*\" -type f 2>/dev/null | head -20)"
     ]
   }
 }
