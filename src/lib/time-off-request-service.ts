@@ -91,6 +91,15 @@ export async function rejectTimeOffRequest(requestId: string, rejectionReason: s
     .single()
 
   if (error) throw error
+
+  supabase.functions
+    .invoke("send-time-off-notification", {
+      body: { request_id: requestId, action: "rejected" },
+    })
+    .catch((err) => {
+      console.warn("[rejectTimeOffRequest] Notification failed (non-fatal):", err)
+    })
+
   return data as TimeOffRequest
 }
 
@@ -100,6 +109,15 @@ export async function approveTimeOffRequest(requestId: string) {
   })
 
   if (error) throw error
+
+  supabase.functions
+    .invoke("send-time-off-notification", {
+      body: { request_id: requestId, action: "approved" },
+    })
+    .catch((err) => {
+      console.warn("[approveTimeOffRequest] Notification failed (non-fatal):", err)
+    })
+
   return data
 }
 

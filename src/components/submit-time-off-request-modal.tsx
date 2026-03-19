@@ -188,7 +188,7 @@ export function SubmitTimeOffRequestModal({
           addToast({
             title: "Failed to submit request",
             description: error.message,
-            variant: "destructive",
+            variant: "error",
           })
         },
       }
@@ -201,7 +201,7 @@ export function SubmitTimeOffRequestModal({
         <DialogHeader>
           <DialogTitle>Request time off</DialogTitle>
           <DialogDescription>
-            Submit a time-off request. Your manager will review and approve or reject it.
+            Select a category and dates to submit your request for approval
           </DialogDescription>
         </DialogHeader>
 

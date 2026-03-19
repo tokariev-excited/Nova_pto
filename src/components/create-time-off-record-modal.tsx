@@ -74,7 +74,8 @@ export function CreateTimeOffRecordModal({
   onOpenChange,
   initialStartDate,
 }: CreateTimeOffRecordModalProps) {
-  const { workspace } = useAuth()
+  const { workspace, profile } = useAuth()
+  const isAdmin = profile?.role === "admin"
   const { data: employees = [] } = useActiveEmployees()
   const { data: categories = [] } = useTimeOffCategories()
   const { data: holidayRows = [] } = useHolidays()
@@ -96,6 +97,10 @@ export function CreateTimeOffRecordModal({
   // Reset state when modal opens/closes
   useEffect(() => {
     if (open) {
+      // Non-admins are always locked to their own profile
+      if (!isAdmin && profile?.id) {
+        setEmployeeId(profile.id)
+      }
       // Pre-fill dates if an initial start date was provided
       if (initialStartDate) {
         setStartDate(initialStartDate)
@@ -110,7 +115,7 @@ export function CreateTimeOffRecordModal({
       setEndPeriod("end_of_day")
       setComment("")
     }
-  }, [open, initialStartDate])
+  }, [open, initialStartDate, isAdmin, profile?.id])
 
   // Fetch all balances for the selected employee
   const { data: balances = [], isLoading: balancesLoading } =
@@ -219,7 +224,7 @@ export function CreateTimeOffRecordModal({
           addToast({
             title: "Failed to create record",
             description: error.message,
-            variant: "destructive",
+            variant: "error",
           })
         },
       }
@@ -238,14 +243,16 @@ export function CreateTimeOffRecordModal({
         </DialogHeader>
 
         <div className="flex flex-col gap-4">
-          {/* Employee */}
-          <Field label="Employee">
-            <EmployeeCombobox
-              employees={employees}
-              value={employeeId}
-              onChange={setEmployeeId}
-            />
-          </Field>
+          {/* Employee — admin only */}
+          {isAdmin && (
+            <Field label="Employee">
+              <EmployeeCombobox
+                employees={employees}
+                value={employeeId}
+                onChange={setEmployeeId}
+              />
+            </Field>
+          )}
 
           {/* Time-off category */}
           <Field label="Time-off category">
