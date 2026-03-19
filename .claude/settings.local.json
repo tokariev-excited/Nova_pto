@@ -36,7 +36,8 @@
       "mcp__supabase__list_projects",
       "mcp__supabase__get_project_url",
       "mcp__supabase__get_project",
-      "mcp__supabase__search_docs"
+      "mcp__supabase__search_docs",
+      "Bash(ls -la /Users/yaroslavtokariev/Desktop/Excited/Figma-To-Code-Projects/Nova_pto/.env*)"
     ]
   },
   "enableAllProjectMcpServers": true,

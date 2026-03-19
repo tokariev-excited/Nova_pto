@@ -9,14 +9,14 @@ import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 
 export function LoginPage() {
-  const { user, loading } = useAuth()
+  const { user, workspace, loading } = useAuth()
   const navigate = useNavigate()
   const [email, setEmail] = useState("")
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState("")
 
   if (loading) return null
-  if (user) return <Navigate to="/requests" replace />
+  if (user && workspace) return <Navigate to="/requests" replace />
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()

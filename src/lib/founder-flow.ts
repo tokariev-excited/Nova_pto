@@ -16,13 +16,27 @@ export async function runFounderFlow(userId: string, email: string) {
   // First-time user — create workspace + profile
   // Generate UUID client-side to avoid needing SELECT after INSERT
   // (SELECT RLS depends on profile existing, which is a chicken-and-egg problem)
-  const workspaceId = crypto.randomUUID()
+  let workspaceId = crypto.randomUUID()
   const { error: wsError } = await supabase
     .from("workspaces")
     .insert({ id: workspaceId, name: "My Workspace", owner_id: userId })
 
   if (wsError) {
-    throw new Error(wsError.message)
+    // Unique violation on owner_id — another tab already created the workspace
+    if (wsError.code === "23505") {
+      const { data: existingWs } = await supabase
+        .from("workspaces")
+        .select("id")
+        .eq("owner_id", userId)
+        .single()
+      if (existingWs) {
+        workspaceId = existingWs.id
+      } else {
+        throw new Error(wsError.message)
+      }
+    } else {
+      throw new Error(wsError.message)
+    }
   }
 
   const { error: profileError } = await supabase
@@ -36,6 +50,10 @@ export async function runFounderFlow(userId: string, email: string) {
     })
 
   if (profileError) {
+    // Duplicate PK — another tab already created the profile
+    if (profileError.code === "23505") {
+      return { isNewUser: false }
+    }
     throw new Error(profileError.message)
   }
 

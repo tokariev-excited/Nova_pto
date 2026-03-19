@@ -1,6 +1,7 @@
 import { useEffect, useRef } from "react"
 import { useNavigate } from "react-router-dom"
 import { supabase } from "@/lib/supabase"
+import { runFounderFlow } from "@/lib/founder-flow"
 import { addToast } from "@/lib/toast"
 
 function getAuthErrorMessage(error: string): string {
@@ -45,36 +46,49 @@ export function AuthCallbackPage() {
 
       // Case 2: PKCE code present — exchange for session
       if (code) {
-        const { error: exchangeError } = await supabase.auth.exchangeCodeForSession(code)
+        const { data, error: exchangeError } = await supabase.auth.exchangeCodeForSession(code)
 
+        let session = data?.session
         if (exchangeError) {
           // Check if auto-detection already handled it (race condition)
-          const { data: { session } } = await supabase.auth.getSession()
-          if (session) {
-            // Session exists — auto-detection won the race, proceed normally
-            navigate("/requests", { replace: true })
+          const { data: { session: existingSession } } = await supabase.auth.getSession()
+          if (existingSession) {
+            session = existingSession
+          } else {
+            addToast({
+              title: "Login failed",
+              description: getAuthErrorMessage(exchangeError.message),
+              variant: "error",
+            })
+            navigate("/login", { replace: true })
             return
           }
-
-          addToast({
-            title: "Login failed",
-            description: getAuthErrorMessage(exchangeError.message),
-            variant: "error",
-          })
-          navigate("/login", { replace: true })
-          return
         }
 
-        // Success — onAuthStateChange will fire SIGNED_IN in auth-context
-        navigate("/requests", { replace: true })
+        // Run founder flow in the callback tab (authoritative for new users)
+        if (session?.user) {
+          try {
+            await runFounderFlow(session.user.id, session.user.email ?? "")
+          } catch (err) {
+            console.error("[AuthCallback] Founder flow failed:", err)
+            // Not fatal — auth-context recovery will retry
+          }
+        }
+
+        // Hard redirect for clean page load — auth-context starts fresh
+        // with session in localStorage and profile/workspace in the database
+        window.location.replace("/requests")
         return
       }
 
       // Case 3: No code, no error — legacy hash flow or direct visit
       // detectSessionInUrl handles hash fragments automatically.
-      // Wait for auth context to settle, then check session.
       const { data: { session } } = await supabase.auth.getSession()
-      navigate(session ? "/requests" : "/login", { replace: true })
+      if (session) {
+        window.location.replace("/requests")
+      } else {
+        navigate("/login", { replace: true })
+      }
     }
 
     handleCallback()

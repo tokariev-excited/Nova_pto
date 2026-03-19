@@ -205,24 +205,28 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         }
 
         if (session?.user) {
-          if (event === "SIGNED_IN") {
-            try {
-              await runFounderFlow(session.user.id, session.user.email ?? "")
-            } catch (err) {
-              console.error("[Auth] Founder flow failed on sign-in:", err)
-            }
-            if (cancelled) return
+          // Cross-tab sign-in: re-enter loading state so auth pages
+          // don't redirect before workspace/profile are loaded
+          if (resolved && event === "SIGNED_IN") {
+            if (!cancelled) setLoading(true)
           }
+
+          // Founder flow is handled by the callback page (/auth/callback).
+          // The recovery path in fetchProfileAndWorkspace handles edge cases.
 
           withRetry(() => fetchProfileAndWorkspace(session.user.id))
             .then(() => {
-              if (!cancelled) setAuthError(null)
+              if (!cancelled) {
+                setAuthError(null)
+                setLoading(false)
+              }
               markResolved()
             })
             .catch((err) => {
               console.error("[Auth] All retries failed:", err.message)
               if (!cancelled) {
                 setAuthError("Unable to load your account data. Please check your connection and try again.")
+                setLoading(false)
               }
               markResolved()
             })

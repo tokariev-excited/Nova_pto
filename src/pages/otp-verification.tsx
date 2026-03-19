@@ -9,14 +9,14 @@ import { Button } from "@/components/ui/button"
 import { addToast } from "@/lib/toast"
 
 export function CheckEmailPage() {
-  const { user, loading: authLoading } = useAuth()
+  const { user, workspace, loading: authLoading } = useAuth()
   const navigate = useNavigate()
   const location = useLocation()
   const email = (location.state as { email?: string })?.email
   const [resending, setResending] = useState(false)
 
   if (authLoading) return null
-  if (user) return <Navigate to="/requests" replace />
+  if (user && workspace) return <Navigate to="/requests" replace />
   if (!email) return <Navigate to="/login" replace />
 
   async function handleResend() {
