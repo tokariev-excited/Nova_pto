@@ -1,7 +1,8 @@
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { useNavigate, useLocation, Navigate } from "react-router-dom"
 import { supabase } from "@/lib/supabase"
 import { getSiteUrl } from "@/lib/site-url"
+import { onAuthComplete } from "@/lib/auth-channel"
 import { useAuth } from "@/hooks/use-auth"
 import { AuthLayout } from "@/components/auth-layout"
 import { NovaLogo } from "@/components/nova-logo"
@@ -14,8 +15,46 @@ export function CheckEmailPage() {
   const location = useLocation()
   const email = (location.state as { email?: string })?.email
   const [resending, setResending] = useState(false)
+  const [authCompletedInOtherTab, setAuthCompletedInOtherTab] = useState(false)
+
+  useEffect(() => {
+    return onAuthComplete(() => setAuthCompletedInOtherTab(true))
+  }, [])
 
   if (authLoading) return null
+
+  // Auth completed in the callback tab — show "continue there" message
+  if (authCompletedInOtherTab && user) {
+    return (
+      <AuthLayout>
+        <div className="flex w-full flex-col items-center gap-8">
+          <NovaLogo />
+          <div className="flex w-full flex-col items-center gap-2 text-center">
+            <h1 className="text-[30px] font-semibold leading-9 tracking-[-0.75px] text-foreground">
+              You're logged in
+            </h1>
+          </div>
+        </div>
+        <div className="flex w-full flex-col items-center gap-5">
+          <p className="text-sm text-muted-foreground text-center">
+            You've been logged in successfully. You can continue in the tab
+            that opened from your email.
+          </p>
+          <p className="text-sm text-muted-foreground text-center">
+            Or{" "}
+            <a
+              href="/requests"
+              className="font-medium text-foreground hover:underline"
+            >
+              open the dashboard here
+            </a>
+          </p>
+        </div>
+      </AuthLayout>
+    )
+  }
+
+  // Already logged in (direct navigation, not cross-tab) — redirect as before
   if (user && workspace) return <Navigate to="/requests" replace />
   if (!email) return <Navigate to="/login" replace />
 

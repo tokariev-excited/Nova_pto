@@ -2,6 +2,7 @@ import { useEffect, useRef } from "react"
 import { useNavigate } from "react-router-dom"
 import { supabase } from "@/lib/supabase"
 import { runFounderFlow } from "@/lib/founder-flow"
+import { broadcastAuthComplete } from "@/lib/auth-channel"
 import { addToast } from "@/lib/toast"
 
 function getAuthErrorMessage(error: string): string {
@@ -75,6 +76,9 @@ export function AuthCallbackPage() {
           }
         }
 
+        // Notify the original tab (on /check-email) that auth is complete
+        broadcastAuthComplete()
+
         // Hard redirect for clean page load — auth-context starts fresh
         // with session in localStorage and profile/workspace in the database
         window.location.replace("/requests")
@@ -85,6 +89,7 @@ export function AuthCallbackPage() {
       // detectSessionInUrl handles hash fragments automatically.
       const { data: { session } } = await supabase.auth.getSession()
       if (session) {
+        broadcastAuthComplete()
         window.location.replace("/requests")
       } else {
         navigate("/login", { replace: true })
