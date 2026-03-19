@@ -9,10 +9,13 @@ import {
   approveTimeOffRequest,
   rejectTimeOffRequest,
   fetchActiveEmployeesForCombobox,
+  fetchMyTimeOffRequests,
+  submitTimeOffRequest,
   type CreateTimeOffRecordParams,
+  type SubmitTimeOffRequestParams,
 } from "@/lib/time-off-request-service"
 import type { TimeOffStatus } from "@/types/time-off-request"
-import { timeOffRequestKeys, employeeBalanceKeys, activeEmployeeKeys } from "@/lib/query-keys"
+import { timeOffRequestKeys, employeeBalanceKeys, activeEmployeeKeys, myRequestKeys } from "@/lib/query-keys"
 
 export function useTimeOffRequests() {
   const { workspace } = useAuth()
@@ -128,5 +131,30 @@ export function useActiveEmployees() {
     queryFn: () => fetchActiveEmployeesForCombobox(workspace!.id),
     enabled: !!workspace,
     placeholderData: keepPreviousData,
+  })
+}
+
+export function useMyTimeOffRequests() {
+  const { profile, workspace } = useAuth()
+
+  return useQuery({
+    queryKey: myRequestKeys.list(profile?.id ?? "", workspace?.id ?? ""),
+    queryFn: () => fetchMyTimeOffRequests(profile!.id, workspace!.id),
+    enabled: !!profile && !!workspace,
+    placeholderData: keepPreviousData,
+  })
+}
+
+export function useSubmitTimeOffRequestMutation() {
+  const queryClient = useQueryClient()
+  const { profile } = useAuth()
+
+  return useMutation({
+    mutationFn: (params: SubmitTimeOffRequestParams) => submitTimeOffRequest(params),
+    onSuccess: () => {
+      if (profile) {
+        queryClient.invalidateQueries({ queryKey: myRequestKeys.all(profile.id) })
+      }
+    },
   })
 }

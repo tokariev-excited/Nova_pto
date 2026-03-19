@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from "react"
+import { useState, useMemo, useEffect, useCallback, startTransition } from "react"
 import { useNavigate } from "react-router-dom"
 import {
   Users,
@@ -47,6 +47,7 @@ import {
   useDeleteEmployeeMutation,
 } from "@/hooks/use-employees"
 import { useDepartments } from "@/hooks/use-departments"
+import { useDebouncedValue } from "@/hooks/use-debounced-value"
 import { getInitials, getDisplayName } from "@/lib/utils"
 import { addToast } from "@/lib/toast"
 import type { EmployeeStatus } from "@/types/employee"
@@ -68,6 +69,7 @@ export function EmployeesPage() {
 
   const [activeTab, setActiveTab] = useState<TabValue>("active")
   const [searchQuery, setSearchQuery] = useState("")
+  const debouncedSearch = useDebouncedValue(searchQuery, 300)
 
   const [pageSize, setPageSize] = useState(10)
   const [currentPage, setCurrentPage] = useState(1)
@@ -99,14 +101,14 @@ export function EmployeesPage() {
     if (currentProfile) {
       list = list.filter((e) => e.id !== currentProfile.id)
     }
-    if (!searchQuery.trim()) return list
-    const q = searchQuery.toLowerCase()
+    if (!debouncedSearch.trim()) return list
+    const q = debouncedSearch.toLowerCase()
     return list.filter(
       (e) =>
         getDisplayName(e.first_name, e.last_name).toLowerCase().includes(q) ||
         e.email.toLowerCase().includes(q)
     )
-  }, [employees, searchQuery, currentProfile])
+  }, [employees, debouncedSearch, currentProfile])
 
   // Adjust counts to exclude workspace owner
   const adjustedCounts = useMemo(() => {
@@ -120,7 +122,7 @@ export function EmployeesPage() {
 
   useEffect(() => {
     setCurrentPage(1)
-  }, [activeTab, searchQuery])
+  }, [activeTab, debouncedSearch])
 
   const totalPages = Math.max(1, Math.ceil(filteredEmployees.length / pageSize))
   const safePage = Math.min(currentPage, totalPages)
@@ -139,11 +141,11 @@ export function EmployeesPage() {
     { value: "deleted", label: "Deleted", badge: adjustedCounts.deleted || undefined },
   ]
 
-  function handleAddEmployee() {
+  const handleAddEmployee = useCallback(() => {
     navigate("/employees/new")
-  }
+  }, [navigate])
 
-  function handleDeactivate(emp: Profile) {
+  const handleDeactivate = useCallback((emp: Profile) => {
     statusMutation.mutate(
       { employeeId: emp.id, status: "inactive" },
       {
@@ -155,9 +157,9 @@ export function EmployeesPage() {
         },
       }
     )
-  }
+  }, [statusMutation])
 
-  function handleActivate(emp: Profile) {
+  const handleActivate = useCallback((emp: Profile) => {
     statusMutation.mutate(
       { employeeId: emp.id, status: "active" },
       {
@@ -169,9 +171,9 @@ export function EmployeesPage() {
         },
       }
     )
-  }
+  }, [statusMutation])
 
-  function handleDeleteConfirm() {
+  const handleDeleteConfirm = useCallback(() => {
     if (!deleteTarget) return
     deleteMutation.mutate(deleteTarget.id, {
       onSuccess: () => {
@@ -182,7 +184,7 @@ export function EmployeesPage() {
         setDeleteTarget(null)
       },
     })
-  }
+  }, [deleteTarget, deleteMutation])
 
   return (
     <div className="flex flex-col size-full">
@@ -210,7 +212,7 @@ export function EmployeesPage() {
         <div className="flex items-center justify-between">
           <TabGroup
             value={activeTab}
-            onValueChange={(v) => setActiveTab(v as TabValue)}
+            onValueChange={(v) => startTransition(() => setActiveTab(v as TabValue))}
             items={tabItems}
           />
           <div className="relative w-[280px]">

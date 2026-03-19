@@ -161,6 +161,12 @@ export function assignEventsToWeeks(
     const weekStart = days[0].date
     const weekEnd = days[6].date
 
+    // Pre-build date→column index map for O(1) lookups instead of findIndex
+    const dateToCol = new Map<string, number>()
+    for (let i = 0; i < days.length; i++) {
+      dateToCol.set(days[i].date, i + 1)
+    }
+
     // Collect segments: events overlapping this week, clipped to week boundaries
     const segments: WeekEventSegment[] = []
 
@@ -171,8 +177,8 @@ export function assignEventsToWeeks(
       const clippedStart = ev.startDate < weekStart ? weekStart : ev.startDate
       const clippedEnd = ev.endDate > weekEnd ? weekEnd : ev.endDate
 
-      const startCol = days.findIndex((d) => d.date === clippedStart) + 1
-      const endCol = days.findIndex((d) => d.date === clippedEnd) + 1
+      const startCol = dateToCol.get(clippedStart) ?? 0
+      const endCol = dateToCol.get(clippedEnd) ?? 0
 
       if (startCol < 1 || endCol < 1) continue
 

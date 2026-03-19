@@ -19,7 +19,7 @@ import { SidebarMenuItem } from "@/components/ui/sidebar-menu-item"
 import { SidebarMenuButton } from "@/components/ui/sidebar-menu-button"
 import { Avatar } from "@/components/ui/avatar"
 
-const navItems = [
+const adminNavItems = [
   { label: "Requests", icon: ListCheck, path: "/requests" },
   { label: "Employees", icon: Users, path: "/employees" },
   { label: "Calendar", icon: Calendar, path: "/calendar" },
@@ -27,8 +27,15 @@ const navItems = [
   { label: "Settings", icon: Settings, path: "/settings" },
 ]
 
+const employeeNavItems = [
+  { label: "Requests", icon: ListCheck, path: "/requests" },
+  { label: "Calendar", icon: Calendar, path: "/calendar" },
+]
+
 export function Sidebar() {
   const { user, workspace, profile, signOut } = useAuth()
+  const isAdmin = profile?.role === "admin"
+  const navItems = isAdmin ? adminNavItems : employeeNavItems
   const { data: pendingCount = 0 } = usePendingRequestCount()
   const { canNavigate } = useNavigationGuard()
   const navigate = useNavigate()
@@ -75,7 +82,7 @@ export function Sidebar() {
               isActive={location.pathname.startsWith(item.path)}
               onClick={() => handleNavigate(item.path)}
               badge={
-                item.path === "/requests" && pendingCount > 0 ? (
+                item.path === "/requests" && isAdmin && pendingCount > 0 ? (
                   <Badge variant="default" size="number">{pendingCount}</Badge>
                 ) : undefined
               }

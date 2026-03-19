@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from "react"
+import { useState, useMemo, useEffect, useCallback, startTransition } from "react"
 import { CalendarClock, CircleCheck, CircleX, ListCheck, ListX, Search } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
@@ -23,6 +23,7 @@ import { addToast } from "@/lib/toast"
 import { generateReport } from "@/lib/generate-report"
 import { formatPeriod, formatDays } from "@/lib/date-utils"
 import { getCategoryDisplay } from "@/lib/request-display"
+import { useDebouncedValue } from "@/hooks/use-debounced-value"
 import type { TimeOffRequest, TimeOffStatus } from "@/types/time-off-request"
 
 type TabValue = "all" | TimeOffStatus
@@ -30,6 +31,7 @@ type TabValue = "all" | TimeOffStatus
 export function RequestsPage() {
   const [activeTab, setActiveTab] = useState<TabValue>("all")
   const [searchQuery, setSearchQuery] = useState("")
+  const debouncedSearch = useDebouncedValue(searchQuery, 300)
   const [createModalOpen, setCreateModalOpen] = useState(false)
   const [approveModalRequest, setApproveModalRequest] = useState<TimeOffRequest | null>(null)
   const [rejectModalRequest, setRejectModalRequest] = useState<TimeOffRequest | null>(null)
@@ -62,8 +64,8 @@ export function RequestsPage() {
     if (activeTab !== "all") {
       result = result.filter((r) => r.status === activeTab)
     }
-    if (searchQuery.trim()) {
-      const q = searchQuery.toLowerCase()
+    if (debouncedSearch.trim()) {
+      const q = debouncedSearch.toLowerCase()
       result = result.filter(
         (r) =>
           r.employee_name.toLowerCase().includes(q) ||
@@ -72,11 +74,11 @@ export function RequestsPage() {
       )
     }
     return result
-  }, [requests, activeTab, searchQuery])
+  }, [requests, activeTab, debouncedSearch])
 
   useEffect(() => {
     setCurrentPage(1)
-  }, [activeTab, searchQuery])
+  }, [activeTab, debouncedSearch])
 
   const totalPages = Math.max(1, Math.ceil(filteredRequests.length / pageSize))
   const safePage = Math.min(currentPage, totalPages)
@@ -92,11 +94,11 @@ export function RequestsPage() {
     { value: "rejected", label: "Rejected", badge: counts.rejected || undefined },
   ]
 
-  function handleCreateRecord() {
+  const handleCreateRecord = useCallback(() => {
     setCreateModalOpen(true)
-  }
+  }, [])
 
-  async function handleDownloadReport() {
+  const handleDownloadReport = useCallback(async () => {
     if (!workspace) return
     setDownloading(true)
     try {
@@ -107,15 +109,15 @@ export function RequestsPage() {
     } finally {
       setDownloading(false)
     }
-  }
+  }, [workspace])
 
-  function handleApprove(req: TimeOffRequest) {
+  const handleApprove = useCallback((req: TimeOffRequest) => {
     setApproveModalRequest(req)
-  }
+  }, [])
 
-  function handleReject(req: TimeOffRequest) {
+  const handleReject = useCallback((req: TimeOffRequest) => {
     setRejectModalRequest(req)
-  }
+  }, [])
 
   return (
     <div className="flex flex-col size-full">
@@ -143,7 +145,7 @@ export function RequestsPage() {
         <div className="flex items-center justify-between">
           <TabGroup
             value={activeTab}
-            onValueChange={(v) => setActiveTab(v as TabValue)}
+            onValueChange={(v) => startTransition(() => setActiveTab(v as TabValue))}
             items={tabItems}
           />
           <div className="relative w-[280px]">

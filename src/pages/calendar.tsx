@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react"
+import { useState, useMemo, useCallback, startTransition } from "react"
 import { CalendarDays, CalendarClock } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
@@ -120,32 +120,37 @@ export function CalendarPage() {
     return map
   }, [categories])
 
-  // Navigation handlers
-  function handlePrevMonth() {
-    setCurrentMonth((d) => new Date(d.getFullYear(), d.getMonth() - 1, 1))
-  }
-  function handleNextMonth() {
-    setCurrentMonth((d) => new Date(d.getFullYear(), d.getMonth() + 1, 1))
-  }
-  function handleToday() {
-    const now = new Date()
-    setCurrentMonth(new Date(now.getFullYear(), now.getMonth(), 1))
-  }
+  // Navigation handlers — wrapped in startTransition to keep UI responsive
+  const handlePrevMonth = useCallback(() => {
+    startTransition(() => {
+      setCurrentMonth((d) => new Date(d.getFullYear(), d.getMonth() - 1, 1))
+    })
+  }, [])
+  const handleNextMonth = useCallback(() => {
+    startTransition(() => {
+      setCurrentMonth((d) => new Date(d.getFullYear(), d.getMonth() + 1, 1))
+    })
+  }, [])
+  const handleToday = useCallback(() => {
+    startTransition(() => {
+      const now = new Date()
+      setCurrentMonth(new Date(now.getFullYear(), now.getMonth(), 1))
+    })
+  }, [])
 
-  function handleDayClick(dateStr: string) {
-    // Parse YYYY-MM-DD into a local Date
+  const handleDayClick = useCallback((dateStr: string) => {
     const [y, m, d] = dateStr.split("-").map(Number)
     setInitialDate(new Date(y, m - 1, d))
     setCreateModalOpen(true)
-  }
+  }, [])
 
-  function handleEventClick(event: CalendarEvent) {
+  const handleEventClick = useCallback((event: CalendarEvent) => {
     if (event.type === "request" && event.originalRequest) {
       setDetailsModalRequest(event.originalRequest)
     }
-  }
+  }, [])
 
-  async function handleDownloadReport() {
+  const handleDownloadReport = useCallback(async () => {
     if (!workspace) return
     setDownloading(true)
     try {
@@ -156,7 +161,7 @@ export function CalendarPage() {
     } finally {
       setDownloading(false)
     }
-  }
+  }, [workspace])
 
   return (
     <div className="flex flex-col size-full">
@@ -188,9 +193,9 @@ export function CalendarPage() {
           onNextMonth={handleNextMonth}
           onToday={handleToday}
           selectedUser={selectedUser}
-          onUserChange={setSelectedUser}
+          onUserChange={(v) => startTransition(() => setSelectedUser(v))}
           selectedCategory={selectedCategory}
-          onCategoryChange={setSelectedCategory}
+          onCategoryChange={(v) => startTransition(() => setSelectedCategory(v))}
           users={userOptions}
           categories={categoryOptions}
         />

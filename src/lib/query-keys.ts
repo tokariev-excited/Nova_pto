@@ -39,3 +39,8 @@ export const employeeBalanceKeys = {
 export const activeEmployeeKeys = {
   list: (workspaceId: string) => ["activeEmployees", workspaceId, "list"] as const,
 }
+
+export const myRequestKeys = {
+  all: (profileId: string) => ["myRequests", profileId] as const,
+  list: (profileId: string, workspaceId: string) => ["myRequests", profileId, workspaceId] as const,
+}

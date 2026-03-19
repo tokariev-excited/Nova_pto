@@ -111,6 +111,60 @@ export interface ComboboxEmployee {
   avatar_url?: string | null
 }
 
+export async function fetchMyTimeOffRequests(profileId: string, workspaceId: string) {
+  const { data, error } = await supabase
+    .from("time_off_requests")
+    .select("*")
+    .eq("profile_id", profileId)
+    .eq("workspace_id", workspaceId)
+    .order("created_at", { ascending: false })
+
+  if (error) throw error
+  return (data ?? []) as TimeOffRequest[]
+}
+
+export interface SubmitTimeOffRequestParams {
+  workspace_id: string
+  profile_id: string
+  category_id: string
+  start_date: string
+  end_date: string
+  start_period: "morning" | "midday"
+  end_period: "midday" | "end_of_day"
+  comment?: string | null
+  employee_name: string
+  employee_email: string
+  employee_avatar_url?: string | null
+  total_days: number
+  request_type: string
+}
+
+export async function submitTimeOffRequest(params: SubmitTimeOffRequestParams) {
+  const { data, error } = await supabase
+    .from("time_off_requests")
+    .insert({
+      profile_id: params.profile_id,
+      workspace_id: params.workspace_id,
+      category_id: params.category_id,
+      start_date: params.start_date,
+      end_date: params.end_date,
+      start_period: params.start_period,
+      end_period: params.end_period,
+      total_days: params.total_days,
+      employee_name: params.employee_name,
+      employee_email: params.employee_email,
+      employee_avatar_url: params.employee_avatar_url ?? null,
+      status: "pending",
+      comment: params.comment ?? null,
+      request_type: params.request_type,
+    })
+    .select()
+    .single()
+
+  if (error) throw error
+  return data as TimeOffRequest
+}
+
 export async function fetchActiveEmployeesForCombobox(workspaceId: string) {
   const { data, error } = await supabase
     .from("profiles")

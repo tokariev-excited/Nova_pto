@@ -4,6 +4,7 @@ import { QueryClient, QueryClientProvider, useQueryClient } from "@tanstack/reac
 import { ReactQueryDevtools } from "@tanstack/react-query-devtools"
 import { SpeedInsights } from "@vercel/speed-insights/react"
 import { AuthProvider } from "@/contexts/auth-context"
+import { useAuth } from "@/hooks/use-auth"
 import { ProtectedRoute } from "@/components/protected-route"
 import { DashboardLayout } from "@/components/layout/DashboardLayout"
 import { supabase } from "@/lib/supabase"
@@ -49,6 +50,13 @@ const TimeOffSetupPage = lazy(() => import("@/pages/time-off-setup").then(m => (
 const AddCategoryPage = lazy(() => import("@/pages/add-category").then(m => ({ default: m.AddCategoryPage })))
 const EditCategoryPage = lazy(() => import("@/pages/edit-category").then(m => ({ default: m.EditCategoryPage })))
 const CalendarPage = lazy(() => import("@/pages/calendar").then(m => ({ default: m.CalendarPage })))
+const EmployeeRequestsPage = lazy(() => import("@/pages/employee-requests").then(m => ({ default: m.EmployeeRequestsPage })))
+
+function RequestsRoute() {
+  const { profile } = useAuth()
+  if (profile?.role !== "admin") return <EmployeeRequestsPage />
+  return <RequestsPage />
+}
 
 export default function App() {
   return (
@@ -71,7 +79,7 @@ export default function App() {
               }
             >
               <Route index element={<Navigate to="requests" replace />} />
-              <Route path="requests" element={<RequestsPage />} />
+              <Route path="requests" element={<RequestsRoute />} />
               <Route path="employees" element={<EmployeesPage />} />
               <Route path="employees/new" element={<AddEmployeePage />} />
               <Route path="employees/:id/edit" element={<EditEmployeePage />} />
