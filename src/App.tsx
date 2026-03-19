@@ -2,6 +2,7 @@ import { lazy, Suspense, useEffect } from "react"
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom"
 import { QueryClient, QueryClientProvider, useQueryClient } from "@tanstack/react-query"
 import { ReactQueryDevtools } from "@tanstack/react-query-devtools"
+import { SpeedInsights } from "@vercel/speed-insights/react"
 import { AuthProvider } from "@/contexts/auth-context"
 import { ProtectedRoute } from "@/components/protected-route"
 import { DashboardLayout } from "@/components/layout/DashboardLayout"
@@ -84,6 +85,7 @@ export default function App() {
           </Suspense>
         </BrowserRouter>
         <Toaster />
+        <SpeedInsights />
       </AuthProvider>
       <ReactQueryDevtools initialIsOpen={false} />
     </QueryClientProvider>
