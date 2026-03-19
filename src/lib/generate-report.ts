@@ -79,7 +79,7 @@ export async function generateReport(workspaceId: string): Promise<void> {
       typeName,
       req.start_date,
       req.end_date,
-      calculateDays(req.start_date, req.end_date),
+      req.total_days ?? calculateDays(req.start_date, req.end_date),
       req.status.charAt(0).toUpperCase() + req.status.slice(1),
       req.comment ?? "",
     ]

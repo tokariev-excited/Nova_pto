@@ -12,56 +12,28 @@ import { DataTablePagination } from "@/components/ui/data-table-pagination"
 import { Input } from "@/components/ui/input"
 import { BreadcrumbItem } from "@/components/ui/breadcrumb-item"
 import { CreateTimeOffRecordModal } from "@/components/create-time-off-record-modal"
-import { useTimeOffRequests, useUpdateRequestStatusMutation } from "@/hooks/use-time-off-requests"
+import { ApproveTimeOffRequestModal } from "@/components/approve-time-off-request-modal"
+import { RejectTimeOffRequestModal } from "@/components/reject-time-off-request-modal"
+import { RequestDetailsModal } from "@/components/request-details-modal"
+import { useTimeOffRequests } from "@/hooks/use-time-off-requests"
 import { useTimeOffCategories } from "@/hooks/use-time-off-categories"
 import { useAuth } from "@/hooks/use-auth"
 import { getInitials } from "@/lib/utils"
 import { addToast } from "@/lib/toast"
 import { generateReport } from "@/lib/generate-report"
+import { formatPeriod, formatDays } from "@/lib/date-utils"
+import { getCategoryDisplay } from "@/lib/request-display"
 import type { TimeOffRequest, TimeOffStatus } from "@/types/time-off-request"
 
 type TabValue = "all" | TimeOffStatus
-
-const legacyTypeLabels: Record<string, string> = {
-  vacation: "Vacation",
-  sick_leave: "Sick Leave",
-  personal: "Personal",
-  bereavement: "Bereavement",
-  other: "Other",
-}
-
-function formatPeriod(startDate: string, endDate: string) {
-  const start = new Date(startDate)
-  const end = new Date(endDate)
-
-  const endFmt = new Intl.DateTimeFormat("en-US", {
-    month: "short",
-    day: "numeric",
-    year: "numeric",
-  }).format(end)
-
-  if (startDate === endDate) return endFmt
-
-  const sameYear = start.getFullYear() === end.getFullYear()
-  const startFmt = new Intl.DateTimeFormat("en-US", {
-    month: "short",
-    day: "numeric",
-    ...(sameYear ? {} : { year: "numeric" as const }),
-  }).format(start)
-
-  return `${startFmt} - ${endFmt}`
-}
-
-function calculateDays(startDate: string, endDate: string) {
-  const start = new Date(startDate)
-  const end = new Date(endDate)
-  return Math.floor((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24)) + 1
-}
 
 export function RequestsPage() {
   const [activeTab, setActiveTab] = useState<TabValue>("all")
   const [searchQuery, setSearchQuery] = useState("")
   const [createModalOpen, setCreateModalOpen] = useState(false)
+  const [approveModalRequest, setApproveModalRequest] = useState<TimeOffRequest | null>(null)
+  const [rejectModalRequest, setRejectModalRequest] = useState<TimeOffRequest | null>(null)
+  const [detailsModalRequest, setDetailsModalRequest] = useState<TimeOffRequest | null>(null)
   const [downloading, setDownloading] = useState(false)
   const [pageSize, setPageSize] = useState(10)
   const [currentPage, setCurrentPage] = useState(1)
@@ -69,7 +41,6 @@ export function RequestsPage() {
   const { workspace } = useAuth()
   const { data: requests = [], isLoading, isError, refetch } = useTimeOffRequests()
   const { data: categories = [] } = useTimeOffCategories()
-  const statusMutation = useUpdateRequestStatusMutation()
 
   const categoryMap = useMemo(() => {
     const map = new Map<string, { name: string; emoji?: string | null }>()
@@ -116,7 +87,7 @@ export function RequestsPage() {
 
   const tabItems = [
     { value: "all", label: "All requests", badge: counts.all || undefined },
-    { value: "pending", label: "Pending", badge: counts.pending || undefined },
+    { value: "pending", label: "Pending", badge: counts.pending || undefined, badgeClassName: "group-data-[state=active]:bg-foreground group-data-[state=active]:text-background group-data-[state=inactive]:bg-foreground group-data-[state=inactive]:text-background" },
     { value: "approved", label: "Approved", badge: counts.approved || undefined },
     { value: "rejected", label: "Rejected", badge: counts.rejected || undefined },
   ]
@@ -138,40 +109,12 @@ export function RequestsPage() {
     }
   }
 
-  function getCategoryDisplay(req: TimeOffRequest) {
-    if (req.category_id) {
-      const cat = categoryMap.get(req.category_id)
-      if (cat) return `${cat.name}${cat.emoji ? ` ${cat.emoji}` : ""}`
-    }
-    return legacyTypeLabels[req.request_type] ?? "Other"
-  }
-
   function handleApprove(req: TimeOffRequest) {
-    statusMutation.mutate(
-      { requestId: req.id, status: "approved" },
-      {
-        onSuccess: () => {
-          addToast({
-            title: "Request approved",
-            description: `${req.employee_name}'s time-off request has been approved`,
-          })
-        },
-      }
-    )
+    setApproveModalRequest(req)
   }
 
   function handleReject(req: TimeOffRequest) {
-    statusMutation.mutate(
-      { requestId: req.id, status: "rejected" },
-      {
-        onSuccess: () => {
-          addToast({
-            title: "Request rejected",
-            description: `${req.employee_name}'s time-off request has been rejected`,
-          })
-        },
-      }
-    )
+    setRejectModalRequest(req)
   }
 
   return (
@@ -275,12 +218,12 @@ export function RequestsPage() {
           ) : (
             <div>
               {paginatedRequests.map((req) => {
-                const days = calculateDays(req.start_date, req.end_date)
+                const days = req.total_days
                 const nameParts = req.employee_name.split(" ")
                 const initials = getInitials(nameParts[0], nameParts.slice(1).join(" "))
 
                 return (
-                  <div key={req.id} className="flex hover:bg-muted/50">
+                  <div key={req.id} className="flex hover:bg-muted/50 cursor-pointer" onClick={() => setDetailsModalRequest(req)}>
                     <DataTableCell
                       type="checkbox"
                       size="md"
@@ -300,14 +243,14 @@ export function RequestsPage() {
                       size="md"
                       className="w-[200px]"
                       label={formatPeriod(req.start_date, req.end_date)}
-                      description={`${days} ${days === 1 ? "day" : "days"}`}
+                      description={formatDays(days)}
                     />
                     <DataTableCell
                       type="text"
                       size="md"
                       className="w-[150px]"
                       labelClassName="font-medium"
-                      label={getCategoryDisplay(req)}
+                      label={getCategoryDisplay(req, categoryMap)}
                     />
                     <DataTableCell
                       type="text"
@@ -331,16 +274,16 @@ export function RequestsPage() {
                           <Button
                             variant="outline"
                             size="icon-sm"
-                            onClick={() => handleApprove(req)}
-                            disabled={statusMutation.isPending}
+                            onClick={(e) => { e.stopPropagation(); handleApprove(req) }}
+                            className="text-[var(--color-success)] hover:bg-[var(--color-success-light)] hover:text-[var(--color-success)]"
                           >
                             <CircleCheck className="size-4" />
                           </Button>
                           <Button
                             variant="outline"
                             size="icon-sm"
-                            onClick={() => handleReject(req)}
-                            disabled={statusMutation.isPending}
+                            onClick={(e) => { e.stopPropagation(); handleReject(req) }}
+                            className="text-[var(--color-error)] hover:bg-[var(--color-error-light)] hover:text-[var(--color-error)]"
                           >
                             <CircleX className="size-4" />
                           </Button>
@@ -379,6 +322,27 @@ export function RequestsPage() {
       <CreateTimeOffRecordModal
         open={createModalOpen}
         onOpenChange={setCreateModalOpen}
+      />
+
+      <ApproveTimeOffRequestModal
+        open={approveModalRequest !== null}
+        onOpenChange={(open) => { if (!open) setApproveModalRequest(null) }}
+        request={approveModalRequest}
+        categoryMap={categoryMap}
+      />
+
+      <RejectTimeOffRequestModal
+        open={rejectModalRequest !== null}
+        onOpenChange={(open) => { if (!open) setRejectModalRequest(null) }}
+        request={rejectModalRequest}
+        categoryMap={categoryMap}
+      />
+
+      <RequestDetailsModal
+        open={detailsModalRequest !== null}
+        onOpenChange={(open) => { if (!open) setDetailsModalRequest(null) }}
+        request={detailsModalRequest}
+        categoryMap={categoryMap}
       />
     </div>
   )

@@ -5,6 +5,7 @@ export interface TabGroupItem {
   value: string
   label: string
   badge?: string | number
+  badgeClassName?: string
   content?: React.ReactNode
 }
 
@@ -21,7 +22,7 @@ function TabGroup({ items, ...props }: TabGroupProps) {
           <TabsTrigger key={item.value} value={item.value}>
             {item.label}
             {item.badge !== undefined && (
-              <TabBadge>{item.badge}</TabBadge>
+              <TabBadge className={item.badgeClassName}>{item.badge}</TabBadge>
             )}
           </TabsTrigger>
         ))}

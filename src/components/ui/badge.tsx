@@ -20,11 +20,10 @@ const badgeVariants = cva(
       },
       size: {
         default: "gap-1 px-1.5 py-0.5",
-        number: "min-w-4 size-4 gap-0 px-1 py-px",
+        number: "min-w-4 gap-0 px-1 py-px",
       },
     },
     compoundVariants: [
-      { variant: "default", size: "number", className: "bg-secondary text-secondary-foreground" },
       { variant: "secondary", size: "number", className: "bg-input text-muted-foreground" },
     ],
     defaultVariants: {

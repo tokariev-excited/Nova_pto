@@ -20,6 +20,7 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { useAuth } from "@/hooks/use-auth"
+import { useHolidays } from "@/hooks/use-holidays"
 import { useTimeOffCategories } from "@/hooks/use-time-off-categories"
 import {
   useActiveEmployees,
@@ -27,19 +28,14 @@ import {
   useCreateTimeOffRecordMutation,
 } from "@/hooks/use-time-off-requests"
 import { addToast } from "@/lib/toast"
+import { calculateDays, formatDays, formatLocalDate } from "@/lib/date-utils"
 import type { TimeOffCategory } from "@/types/time-off-category"
 import type { EmployeeBalance } from "@/types/employee-balance"
+import type { StartPeriod, EndPeriod } from "@/types/time-off-request"
 
 interface CreateTimeOffRecordModalProps {
   open: boolean
   onOpenChange: (open: boolean) => void
-}
-
-function formatDateToString(date: Date): string {
-  const y = date.getFullYear()
-  const m = String(date.getMonth() + 1).padStart(2, "0")
-  const d = String(date.getDate()).padStart(2, "0")
-  return `${y}-${m}-${d}`
 }
 
 function getBalanceText(
@@ -64,6 +60,14 @@ function isItemDisabled(
   return entry != null && entry.remaining_days <= 0
 }
 
+function isSameDay(a: Date, b: Date): boolean {
+  return (
+    a.getFullYear() === b.getFullYear() &&
+    a.getMonth() === b.getMonth() &&
+    a.getDate() === b.getDate()
+  )
+}
+
 export function CreateTimeOffRecordModal({
   open,
   onOpenChange,
@@ -71,12 +75,20 @@ export function CreateTimeOffRecordModal({
   const { workspace } = useAuth()
   const { data: employees = [] } = useActiveEmployees()
   const { data: categories = [] } = useTimeOffCategories()
+  const { data: holidayRows = [] } = useHolidays()
   const createMutation = useCreateTimeOffRecordMutation()
+
+  const holidayDates = useMemo(
+    () => holidayRows.map((h) => h.date),
+    [holidayRows]
+  )
 
   const [employeeId, setEmployeeId] = useState<string | undefined>()
   const [categoryId, setCategoryId] = useState<string | undefined>()
   const [startDate, setStartDate] = useState<Date | undefined>()
   const [endDate, setEndDate] = useState<Date | undefined>()
+  const [startPeriod, setStartPeriod] = useState<StartPeriod>("morning")
+  const [endPeriod, setEndPeriod] = useState<EndPeriod>("end_of_day")
   const [comment, setComment] = useState("")
 
   // Reset state when modal closes
@@ -86,6 +98,8 @@ export function CreateTimeOffRecordModal({
       setCategoryId(undefined)
       setStartDate(undefined)
       setEndDate(undefined)
+      setStartPeriod("morning")
+      setEndPeriod("end_of_day")
       setComment("")
     }
   }, [open])
@@ -111,13 +125,45 @@ export function CreateTimeOffRecordModal({
     [activeCategories, categoryId]
   )
 
-  // Calculate total days
+  // Compute available end-period options based on dates and start period
+  const endPeriodOptions = useMemo(() => {
+    if (startDate && endDate && isSameDay(startDate, endDate)) {
+      if (startPeriod === "midday") {
+        return [{ value: "end_of_day" as const, label: "End of day" }]
+      }
+      // startPeriod === "morning", same day
+      return [
+        { value: "midday" as const, label: "Midday" },
+        { value: "end_of_day" as const, label: "End of day" },
+      ]
+    }
+    // Different days or dates not yet set
+    return [
+      { value: "midday" as const, label: "Midday" },
+      { value: "end_of_day" as const, label: "End of day" },
+    ]
+  }, [startDate, endDate, startPeriod])
+
+  // Auto-correct endPeriod when its available options change
+  useEffect(() => {
+    const validValues = endPeriodOptions.map((o) => o.value)
+    if (!validValues.includes(endPeriod)) {
+      setEndPeriod(validValues[0])
+    }
+  }, [endPeriodOptions, endPeriod])
+
+  // Calculate total days (fractional, excluding weekends & holidays)
   const totalDays = useMemo(() => {
     if (!startDate || !endDate) return null
     if (endDate < startDate) return null
-    const diffMs = endDate.getTime() - startDate.getTime()
-    return Math.floor(diffMs / (1000 * 60 * 60 * 24)) + 1
-  }, [startDate, endDate])
+    return calculateDays(
+      formatLocalDate(startDate),
+      formatLocalDate(endDate),
+      startPeriod,
+      endPeriod,
+      holidayDates
+    )
+  }, [startDate, endDate, startPeriod, endPeriod, holidayDates])
 
   // Validation
   const hasRequiredFields = !!employeeId && !!categoryId && !!startDate && !!endDate
@@ -147,8 +193,10 @@ export function CreateTimeOffRecordModal({
         workspace_id: workspace.id,
         employee_id: employeeId,
         category_id: categoryId,
-        start_date: formatDateToString(startDate),
-        end_date: formatDateToString(endDate),
+        start_date: formatLocalDate(startDate),
+        end_date: formatLocalDate(endDate),
+        start_period: startPeriod,
+        end_period: endPeriod,
         comment: comment.trim() || null,
       },
       {
@@ -220,30 +268,66 @@ export function CreateTimeOffRecordModal({
             </Select>
           </Field>
 
-          {/* Dates row */}
+          {/* From date + period */}
           <div className="flex flex-col gap-2">
-            <div className="flex gap-3">
-              <Field label="Start date" className="flex-1">
+            <div className="flex gap-3 items-end">
+              <Field label="From" className="flex-1">
                 <DatePicker
                   value={startDate}
                   onChange={setStartDate}
                   placeholder="Pick a date"
                 />
               </Field>
-              <Field label="End date" className="flex-1">
+              <div className="flex-1">
+                <Select
+                  value={startPeriod}
+                  onValueChange={(v) => setStartPeriod(v as StartPeriod)}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="morning">Morning</SelectItem>
+                    <SelectItem value="midday">Midday</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            {/* To date + period */}
+            <div className="flex gap-3 items-end">
+              <Field label="To" className="flex-1">
                 <DatePicker
                   value={endDate}
                   onChange={setEndDate}
                   placeholder="Pick a date"
                 />
               </Field>
+              <div className="flex-1">
+                <Select
+                  value={endPeriod}
+                  onValueChange={(v) => setEndPeriod(v as EndPeriod)}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {endPeriodOptions.map((opt) => (
+                      <SelectItem key={opt.value} value={opt.value}>
+                        {opt.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
+
             {/* Total days */}
             {totalDays != null && totalDays > 0 && (
               <p className="text-sm leading-5 tracking-tight text-muted-foreground">
                 Total:{" "}
                 <span className="font-medium text-foreground">
-                  {totalDays} {totalDays === 1 ? "day" : "days"}
+                  {formatDays(totalDays)}
                 </span>
               </p>
             )}

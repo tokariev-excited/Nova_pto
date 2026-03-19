@@ -1,0 +1,143 @@
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogFooter,
+  DialogTitle,
+  DialogDescription,
+} from "@/components/ui/dialog"
+import { Button } from "@/components/ui/button"
+import { Avatar } from "@/components/ui/avatar"
+import { Separator } from "@/components/ui/separator"
+import { useApproveRequestMutation } from "@/hooks/use-time-off-requests"
+import { getInitials } from "@/lib/utils"
+import { addToast } from "@/lib/toast"
+import { formatPeriod, formatDays, formatDateTime } from "@/lib/date-utils"
+import { getCategoryDisplay } from "@/lib/request-display"
+import type { TimeOffRequest } from "@/types/time-off-request"
+
+interface ApproveTimeOffRequestModalProps {
+  open: boolean
+  onOpenChange: (open: boolean) => void
+  request: TimeOffRequest | null
+  categoryMap: Map<string, { name: string; emoji?: string | null }>
+}
+
+function InfoRow({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <div className="flex items-start gap-2">
+      <span className="flex-1 min-w-0 text-sm font-medium leading-5 tracking-[-0.28px] text-muted-foreground truncate">
+        {label}
+      </span>
+      <div className="flex items-center gap-1.5 text-sm font-medium leading-5 tracking-[-0.28px] text-foreground shrink-0">
+        {children}
+      </div>
+    </div>
+  )
+}
+
+export function ApproveTimeOffRequestModal({
+  open,
+  onOpenChange,
+  request,
+  categoryMap,
+}: ApproveTimeOffRequestModalProps) {
+  const approveMutation = useApproveRequestMutation()
+
+  if (!request) return null
+
+  const nameParts = request.employee_name.split(" ")
+  const initials = getInitials(nameParts[0], nameParts.slice(1).join(" "))
+  const days = request.total_days
+
+  function handleApprove() {
+    if (!request) return
+
+    approveMutation.mutate(
+      { requestId: request.id, profileId: request.profile_id },
+      {
+        onSuccess: () => {
+          addToast({
+            title: "Request approved",
+            description: `${request.employee_name}'s time-off request has been approved`,
+          })
+          onOpenChange(false)
+        },
+        onError: (error) => {
+          addToast({
+            title: "Failed to approve request",
+            description: error.message,
+            variant: "error",
+          })
+        },
+      }
+    )
+  }
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-[480px] gap-5">
+        <DialogHeader className="gap-1.5">
+          <DialogTitle className="leading-none tracking-[-0.45px]">Approve time-off request</DialogTitle>
+          <DialogDescription>
+            Are you sure you want to approve this time off request?
+          </DialogDescription>
+        </DialogHeader>
+
+        <div className="bg-secondary rounded-xl p-4 flex flex-col gap-3">
+          <InfoRow label="Employee">
+            <Avatar
+              size="2xs"
+              shape="square"
+              src={request.employee_avatar_url}
+              alt={request.employee_name}
+              fallback={initials}
+            />
+            <span>{request.employee_name}</span>
+          </InfoRow>
+
+          <InfoRow label="Request type">
+            <span>{getCategoryDisplay(request, categoryMap)}</span>
+          </InfoRow>
+
+          <InfoRow label="Period">
+            <span>{formatPeriod(request.start_date, request.end_date)}</span>
+            <span className="text-muted-foreground">
+              ({formatDays(days)})
+            </span>
+          </InfoRow>
+
+          <InfoRow label="Requested on">
+            <span>{formatDateTime(request.created_at)}</span>
+          </InfoRow>
+
+          {request.comment && (
+            <>
+              <Separator />
+              <div className="flex flex-col gap-1">
+                <span className="text-sm font-medium leading-5 tracking-[-0.28px] text-muted-foreground">
+                  Comment
+                </span>
+                <p className="text-sm font-medium leading-5 tracking-[-0.28px] text-foreground">
+                  {request.comment}
+                </p>
+              </div>
+            </>
+          )}
+        </div>
+
+        <DialogFooter>
+          <Button variant="secondary" onClick={() => onOpenChange(false)}>
+            Cancel
+          </Button>
+          <Button
+            onClick={handleApprove}
+            loading={approveMutation.isPending}
+          >
+            Approve request
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  )
+}

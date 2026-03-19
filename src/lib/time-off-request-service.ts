@@ -46,6 +46,8 @@ export interface CreateTimeOffRecordParams {
   category_id: string
   start_date: string
   end_date: string
+  start_period?: "morning" | "midday"
+  end_period?: "midday" | "end_of_day"
   comment?: string | null
 }
 
@@ -57,6 +59,8 @@ export async function createTimeOffRecord(params: CreateTimeOffRecordParams) {
     p_start_date: params.start_date,
     p_end_date: params.end_date,
     p_comment: params.comment ?? null,
+    p_start_period: params.start_period ?? "morning",
+    p_end_period: params.end_period ?? "end_of_day",
   })
 
   if (error) throw error
@@ -76,6 +80,27 @@ export async function updateTimeOffRequestStatus(
 
   if (error) throw error
   return data as TimeOffRequest
+}
+
+export async function rejectTimeOffRequest(requestId: string, rejectionReason: string) {
+  const { data, error } = await supabase
+    .from("time_off_requests")
+    .update({ status: "rejected", rejection_reason: rejectionReason })
+    .eq("id", requestId)
+    .select()
+    .single()
+
+  if (error) throw error
+  return data as TimeOffRequest
+}
+
+export async function approveTimeOffRequest(requestId: string) {
+  const { data, error } = await supabase.rpc("approve_time_off_request", {
+    p_request_id: requestId,
+  })
+
+  if (error) throw error
+  return data
 }
 
 export interface ComboboxEmployee {

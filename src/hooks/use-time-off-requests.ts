@@ -6,6 +6,8 @@ import {
   fetchEmployeeBalances,
   createTimeOffRecord,
   updateTimeOffRequestStatus,
+  approveTimeOffRequest,
+  rejectTimeOffRequest,
   fetchActiveEmployeesForCombobox,
   type CreateTimeOffRecordParams,
 } from "@/lib/time-off-request-service"
@@ -70,6 +72,39 @@ export function useUpdateRequestStatusMutation() {
       if (workspace) {
         queryClient.invalidateQueries({ queryKey: timeOffRequestKeys.all(workspace.id) })
       }
+    },
+  })
+}
+
+export function useRejectRequestMutation() {
+  const queryClient = useQueryClient()
+  const { workspace } = useAuth()
+
+  return useMutation({
+    mutationFn: ({ requestId, reason }: { requestId: string; reason: string }) =>
+      rejectTimeOffRequest(requestId, reason),
+    onSuccess: () => {
+      if (workspace) {
+        queryClient.invalidateQueries({ queryKey: timeOffRequestKeys.all(workspace.id) })
+      }
+    },
+  })
+}
+
+export function useApproveRequestMutation() {
+  const queryClient = useQueryClient()
+  const { workspace } = useAuth()
+
+  return useMutation({
+    mutationFn: ({ requestId }: { requestId: string; profileId: string }) =>
+      approveTimeOffRequest(requestId),
+    onSuccess: (_data, variables) => {
+      if (workspace) {
+        queryClient.invalidateQueries({ queryKey: timeOffRequestKeys.all(workspace.id) })
+      }
+      queryClient.invalidateQueries({
+        queryKey: employeeBalanceKeys.allForEmployee(variables.profileId),
+      })
     },
   })
 }

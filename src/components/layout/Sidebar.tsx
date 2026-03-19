@@ -76,7 +76,7 @@ export function Sidebar() {
               onClick={() => handleNavigate(item.path)}
               badge={
                 item.path === "/requests" && pendingCount > 0 ? (
-                  <Badge variant="active" size="number">{pendingCount}</Badge>
+                  <Badge variant="default" size="number">{pendingCount}</Badge>
                 ) : undefined
               }
             >

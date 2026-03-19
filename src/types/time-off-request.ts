@@ -1,5 +1,7 @@
 export type TimeOffStatus = "pending" | "approved" | "rejected"
 export type TimeOffType = "vacation" | "sick_leave" | "personal" | "bereavement" | "other"
+export type StartPeriod = "morning" | "midday"
+export type EndPeriod = "midday" | "end_of_day"
 
 export interface TimeOffRequest {
   id: string
@@ -11,9 +13,13 @@ export interface TimeOffRequest {
   employee_avatar_url?: string
   start_date: string
   end_date: string
+  start_period: StartPeriod
+  end_period: EndPeriod
+  total_days: number
   request_type: TimeOffType
   status: TimeOffStatus
   comment?: string
+  rejection_reason?: string | null
   created_at: string
   updated_at: string
 }

@@ -40,16 +40,11 @@ function EmployeeCombobox({
 
   const results = useMemo(() => {
     const q = query.toLowerCase().trim()
-    if (!q) return employees.slice(0, 8)
-    return employees
-      .filter((e) => {
-        const name = getDisplayName(e.first_name ?? undefined, e.last_name ?? undefined).toLowerCase()
-        return (
-          name.includes(q) ||
-          e.email.toLowerCase().includes(q)
-        )
-      })
-      .slice(0, 8)
+    if (!q) return employees
+    return employees.filter((e) => {
+      const name = getDisplayName(e.first_name ?? undefined, e.last_name ?? undefined).toLowerCase()
+      return name.includes(q) || e.email.toLowerCase().includes(q)
+    })
   }, [employees, query])
 
   function handleInputChange(e: React.ChangeEvent<HTMLInputElement>) {
@@ -141,6 +136,7 @@ function EmployeeCombobox({
         style={{ width: "var(--radix-popover-trigger-width)" }}
         onOpenAutoFocus={(e) => e.preventDefault()}
       >
+        <div className="max-h-[160px] overflow-y-auto">
         {results.map((employee) => {
           const name = getDisplayName(employee.first_name ?? undefined, employee.last_name ?? undefined)
           return (
@@ -170,6 +166,7 @@ function EmployeeCombobox({
             </button>
           )
         })}
+        </div>
       </PopoverContent>
     </Popover>
   )

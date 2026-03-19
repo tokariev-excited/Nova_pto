@@ -14,6 +14,7 @@ import { DatePicker } from "@/components/ui/date-picker"
 import { useAuth } from "@/hooks/use-auth"
 import { useCreateHolidayMutation, useUpdateHolidayMutation } from "@/hooks/use-holidays"
 import { addToast } from "@/lib/toast"
+import { formatLocalDate } from "@/lib/date-utils"
 import type { Holiday } from "@/types/holiday"
 
 interface HolidayModalProps {
@@ -25,13 +26,6 @@ interface HolidayModalProps {
 function parseDateString(dateStr: string): Date {
   const [year, month, day] = dateStr.split("-").map(Number)
   return new Date(year, month - 1, day)
-}
-
-function formatDateToString(date: Date): string {
-  const y = date.getFullYear()
-  const m = String(date.getMonth() + 1).padStart(2, "0")
-  const d = String(date.getDate()).padStart(2, "0")
-  return `${y}-${m}-${d}`
 }
 
 export function HolidayModal({ open, onOpenChange, holiday }: HolidayModalProps) {
@@ -57,14 +51,14 @@ export function HolidayModal({ open, onOpenChange, holiday }: HolidayModalProps)
 
   const isValid = name.trim().length > 0 && date != null
   const isDirty = isEdit
-    ? name.trim() !== holiday!.name || (date != null && formatDateToString(date) !== holiday!.date)
+    ? name.trim() !== holiday!.name || (date != null && formatLocalDate(date) !== holiday!.date)
     : true
   const isPending = createMutation.isPending || updateMutation.isPending
 
   function handleSubmit() {
     if (!isValid || !workspace) return
 
-    const dateStr = formatDateToString(date!)
+    const dateStr = formatLocalDate(date!)
 
     if (isEdit) {
       updateMutation.mutate(
