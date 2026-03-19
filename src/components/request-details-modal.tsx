@@ -7,7 +7,7 @@ import {
 import { Avatar } from "@/components/ui/avatar"
 import { Separator } from "@/components/ui/separator"
 import { getInitials } from "@/lib/utils"
-import { formatPeriod, formatDays, formatDateTime } from "@/lib/date-utils"
+import { formatDate, formatDays, formatPeriodLabel } from "@/lib/date-utils"
 import { getCategoryDisplay } from "@/lib/request-display"
 import type { TimeOffRequest, TimeOffStatus } from "@/types/time-off-request"
 
@@ -80,15 +80,22 @@ export function RequestDetailsModal({
             </span>
           </InfoRow>
 
-          <InfoRow label="Period">
-            <span>{formatPeriod(request.start_date, request.end_date)}</span>
+          <InfoRow label="From">
+            <span>{formatDate(request.start_date)}</span>
             <span className="text-muted-foreground">
-              ({formatDays(days)})
+              ({formatPeriodLabel(request.start_period)})
             </span>
           </InfoRow>
 
-          <InfoRow label="Requested on">
-            <span>{formatDateTime(request.created_at)}</span>
+          <InfoRow label="To">
+            <span>{formatDate(request.end_date)}</span>
+            <span className="text-muted-foreground">
+              ({formatPeriodLabel(request.end_period)})
+            </span>
+          </InfoRow>
+
+          <InfoRow label="Total">
+            <span>{formatDays(days)}</span>
           </InfoRow>
 
           <Separator />

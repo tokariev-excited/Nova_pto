@@ -71,6 +71,24 @@ export function formatDays(days: number): string {
   return `${formatted} ${days === 1 ? "day" : "days"}`
 }
 
+export function formatDate(dateStr: string): string {
+  const [y, m, d] = dateStr.split("-").map(Number)
+  return new Intl.DateTimeFormat("en-US", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+  }).format(new Date(y, m - 1, d))
+}
+
+export function formatPeriodLabel(period: string): string {
+  const labels: Record<string, string> = {
+    morning: "Morning",
+    midday: "Midday",
+    end_of_day: "End of day",
+  }
+  return labels[period] ?? period
+}
+
 export function formatDateTime(isoString: string) {
   return new Intl.DateTimeFormat("en-US", {
     month: "short",
