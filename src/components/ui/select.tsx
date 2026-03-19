@@ -31,7 +31,7 @@ function SelectTrigger({
     <SelectPrimitive.Trigger
       data-slot="select-trigger"
       className={cn(
-        "flex h-9 w-full items-center justify-between gap-2 rounded-md border border-input bg-background px-3 py-2 text-sm leading-5 tracking-tight shadow-xs transition-[color,border-color,box-shadow] outline-none",
+        "group flex h-9 w-full items-center justify-between gap-2 rounded-md border border-input bg-background px-3 py-2 text-sm leading-5 tracking-tight shadow-xs transition-[color,border-color,box-shadow] outline-none",
         "data-[placeholder]:text-muted-foreground",
         "[&:not([data-placeholder])]:font-medium",
         "focus:border-focus focus:shadow-focus",
@@ -45,7 +45,7 @@ function SelectTrigger({
     >
       {children}
       <SelectPrimitive.Icon asChild>
-        <ChevronDownIcon className="size-4 shrink-0 text-muted-foreground" />
+        <ChevronDownIcon className="size-4 shrink-0 text-muted-foreground transition-transform group-data-[state=open]:rotate-180" />
       </SelectPrimitive.Icon>
     </SelectPrimitive.Trigger>
   )

@@ -149,7 +149,7 @@ export function RequestsPage() {
           <div className="relative w-[280px]">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground pointer-events-none" />
             <Input
-              placeholder="Search for requests..."
+              placeholder="Search requests by employee..."
               className="pl-9"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}

@@ -36,6 +36,7 @@ import type { StartPeriod, EndPeriod } from "@/types/time-off-request"
 interface CreateTimeOffRecordModalProps {
   open: boolean
   onOpenChange: (open: boolean) => void
+  initialStartDate?: Date
 }
 
 function getBalanceText(
@@ -71,6 +72,7 @@ function isSameDay(a: Date, b: Date): boolean {
 export function CreateTimeOffRecordModal({
   open,
   onOpenChange,
+  initialStartDate,
 }: CreateTimeOffRecordModalProps) {
   const { workspace } = useAuth()
   const { data: employees = [] } = useActiveEmployees()
@@ -91,9 +93,15 @@ export function CreateTimeOffRecordModal({
   const [endPeriod, setEndPeriod] = useState<EndPeriod>("end_of_day")
   const [comment, setComment] = useState("")
 
-  // Reset state when modal closes
+  // Reset state when modal opens/closes
   useEffect(() => {
-    if (!open) {
+    if (open) {
+      // Pre-fill dates if an initial start date was provided
+      if (initialStartDate) {
+        setStartDate(initialStartDate)
+        setEndDate(initialStartDate)
+      }
+    } else {
       setEmployeeId(undefined)
       setCategoryId(undefined)
       setStartDate(undefined)
@@ -102,7 +110,7 @@ export function CreateTimeOffRecordModal({
       setEndPeriod("end_of_day")
       setComment("")
     }
-  }, [open])
+  }, [open, initialStartDate])
 
   // Fetch all balances for the selected employee
   const { data: balances = [], isLoading: balancesLoading } =
