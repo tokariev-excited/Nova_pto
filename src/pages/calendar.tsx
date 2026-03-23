@@ -7,6 +7,7 @@ import { BreadcrumbItem } from "@/components/ui/breadcrumb-item"
 import { CalendarFilters } from "@/components/calendar/calendar-filters"
 import { CalendarMonthGrid } from "@/components/calendar/calendar-month-grid"
 import { CreateTimeOffRecordModal } from "@/components/create-time-off-record-modal"
+import { SubmitTimeOffRequestModal } from "@/components/submit-time-off-request-modal"
 import { RequestDetailsModal } from "@/components/request-details-modal"
 import { useTimeOffRequests } from "@/hooks/use-time-off-requests"
 import { useTimeOffCategories } from "@/hooks/use-time-off-categories"
@@ -33,11 +34,13 @@ export function CalendarPage() {
   const [selectedUser, setSelectedUser] = useState("all")
   const [selectedCategory, setSelectedCategory] = useState("all")
   const [createModalOpen, setCreateModalOpen] = useState(false)
+  const [requestModalOpen, setRequestModalOpen] = useState(false)
   const [initialDate, setInitialDate] = useState<Date | undefined>()
   const [detailsModalRequest, setDetailsModalRequest] = useState<TimeOffRequest | null>(null)
   const [downloading, setDownloading] = useState(false)
 
-  const { workspace } = useAuth()
+  const { workspace, profile } = useAuth()
+  const isAdmin = profile?.role === "admin"
   const { data: requests = [] } = useTimeOffRequests()
   const { data: categories = [] } = useTimeOffCategories()
   const { data: holidays = [] } = useHolidays()
@@ -139,10 +142,14 @@ export function CalendarPage() {
   }, [])
 
   const handleDayClick = useCallback((dateStr: string) => {
-    const [y, m, d] = dateStr.split("-").map(Number)
-    setInitialDate(new Date(y, m - 1, d))
-    setCreateModalOpen(true)
-  }, [])
+    if (isAdmin) {
+      const [y, m, d] = dateStr.split("-").map(Number)
+      setInitialDate(new Date(y, m - 1, d))
+      setCreateModalOpen(true)
+    } else {
+      setRequestModalOpen(true)
+    }
+  }, [isAdmin])
 
   const handleEventClick = useCallback((event: CalendarEvent) => {
     if (event.type === "request" && event.originalRequest) {
@@ -175,13 +182,22 @@ export function CalendarPage() {
         </div>
         <BreadcrumbItem text="Calendar" className="flex-1 text-foreground font-medium" />
         <div className="flex items-center gap-3">
-          <Button variant="secondary" loading={downloading} onClick={handleDownloadReport}>
-            Download report
-          </Button>
-          <Button onClick={() => { setInitialDate(undefined); setCreateModalOpen(true) }}>
-            <CalendarClock />
-            Create time-off record
-          </Button>
+          {isAdmin && (
+            <Button variant="secondary" loading={downloading} onClick={handleDownloadReport}>
+              Download report
+            </Button>
+          )}
+          {isAdmin ? (
+            <Button onClick={() => { setInitialDate(undefined); setCreateModalOpen(true) }}>
+              <CalendarClock />
+              Create time-off record
+            </Button>
+          ) : (
+            <Button onClick={() => setRequestModalOpen(true)}>
+              <CalendarClock />
+              Request time off
+            </Button>
+          )}
         </div>
       </div>
 
@@ -214,6 +230,11 @@ export function CalendarPage() {
           if (!open) setInitialDate(undefined)
         }}
         initialStartDate={initialDate}
+      />
+
+      <SubmitTimeOffRequestModal
+        open={requestModalOpen}
+        onOpenChange={setRequestModalOpen}
       />
 
       <RequestDetailsModal

@@ -7,6 +7,7 @@ export async function fetchTimeOffRequests(workspaceId: string) {
     .from("time_off_requests")
     .select("*")
     .eq("workspace_id", workspaceId)
+    .neq("status", "withdrawn")
     .order("created_at", { ascending: false })
 
   if (error) throw error
@@ -127,6 +128,19 @@ export interface ComboboxEmployee {
   last_name?: string | null
   email: string
   avatar_url?: string | null
+}
+
+export async function withdrawTimeOffRequest(requestId: string) {
+  const { data, error } = await supabase
+    .from("time_off_requests")
+    .update({ status: "withdrawn" })
+    .eq("id", requestId)
+    .eq("status", "pending")
+    .select()
+    .single()
+
+  if (error) throw error
+  return data as TimeOffRequest
 }
 
 export async function fetchMyTimeOffRequests(profileId: string, workspaceId: string) {

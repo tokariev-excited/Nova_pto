@@ -11,6 +11,7 @@ import {
   fetchActiveEmployeesForCombobox,
   fetchMyTimeOffRequests,
   submitTimeOffRequest,
+  withdrawTimeOffRequest,
   type CreateTimeOffRecordParams,
   type SubmitTimeOffRequestParams,
 } from "@/lib/time-off-request-service"
@@ -142,6 +143,20 @@ export function useMyTimeOffRequests() {
     queryFn: () => fetchMyTimeOffRequests(profile!.id, workspace!.id),
     enabled: !!profile && !!workspace,
     placeholderData: keepPreviousData,
+  })
+}
+
+export function useWithdrawRequestMutation() {
+  const queryClient = useQueryClient()
+  const { profile } = useAuth()
+
+  return useMutation({
+    mutationFn: (requestId: string) => withdrawTimeOffRequest(requestId),
+    onSuccess: () => {
+      if (profile) {
+        queryClient.invalidateQueries({ queryKey: myRequestKeys.all(profile.id) })
+      }
+    },
   })
 }
 

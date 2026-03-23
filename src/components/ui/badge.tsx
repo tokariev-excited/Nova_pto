@@ -1,6 +1,6 @@
 import * as React from "react"
 import { cva, type VariantProps } from "class-variance-authority"
-import { CircleCheck, CircleDashed, CircleX } from "lucide-react"
+import { CircleCheck, CircleDashed, CircleX, RotateCcw } from "lucide-react"
 
 import { cn } from "@/lib/utils"
 
@@ -16,6 +16,7 @@ const badgeVariants = cva(
         secondary: "bg-secondary text-foreground",
         outline: "border border-border text-foreground",
         destructive: "bg-destructive text-destructive-foreground",
+        withdrawn: "bg-secondary text-muted-foreground",
         active: "bg-primary text-primary-foreground",
       },
       size: {
@@ -39,6 +40,7 @@ const statusIconMap: Partial<
   pending: CircleDashed,
   approved: CircleCheck,
   rejected: CircleX,
+  withdrawn: RotateCcw,
 }
 
 function Badge({

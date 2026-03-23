@@ -1,26 +1,48 @@
 import { useState, useMemo } from "react"
-import { CalendarClock, FileSearch, ListCheck } from "lucide-react"
+import { CalendarClock, EllipsisIcon, Eye, FileSearch, ListCheck, RotateCcw } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import { Separator } from "@/components/ui/separator"
 import { DataTableHeaderCell } from "@/components/ui/data-table-header-cell"
 import { DataTableCell } from "@/components/ui/data-table-cell"
 import { Badge } from "@/components/ui/badge"
+import { DataTablePagination } from "@/components/ui/data-table-pagination"
 import { BreadcrumbItem } from "@/components/ui/breadcrumb-item"
+import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover"
+import { ComboboxMenu } from "@/components/ui/combobox-menu"
+import {
+  AlertDialog,
+  AlertDialogContent,
+  AlertDialogHeader,
+  AlertDialogFooter,
+  AlertDialogTitle,
+  AlertDialogDescription,
+  AlertDialogAction,
+  AlertDialogCancel,
+} from "@/components/ui/alert-dialog"
 import { SubmitTimeOffRequestModal } from "@/components/submit-time-off-request-modal"
-import { useMyTimeOffRequests, useEmployeeBalances } from "@/hooks/use-time-off-requests"
+import { RequestDetailsModal } from "@/components/request-details-modal"
+import { useMyTimeOffRequests, useEmployeeBalances, useWithdrawRequestMutation } from "@/hooks/use-time-off-requests"
 import { useTimeOffCategories } from "@/hooks/use-time-off-categories"
 import { useAuth } from "@/hooks/use-auth"
 import { formatPeriod, formatDays } from "@/lib/date-utils"
 import { getCategoryDisplay } from "@/lib/request-display"
+import { addToast } from "@/lib/toast"
+import type { TimeOffRequest } from "@/types/time-off-request"
 
 export function EmployeeRequestsPage() {
   const [requestModalOpen, setRequestModalOpen] = useState(false)
+  const [openPopoverId, setOpenPopoverId] = useState<string | null>(null)
+  const [withdrawTarget, setWithdrawTarget] = useState<TimeOffRequest | null>(null)
+  const [detailsRequest, setDetailsRequest] = useState<TimeOffRequest | null>(null)
+  const [pageSize, setPageSize] = useState(10)
+  const [currentPage, setCurrentPage] = useState(1)
 
   const { profile } = useAuth()
   const { data: myRequests = [], isLoading } = useMyTimeOffRequests()
   const { data: balances = [] } = useEmployeeBalances(profile?.id)
   const { data: categories = [] } = useTimeOffCategories()
+  const withdrawMutation = useWithdrawRequestMutation()
 
   const balanceMap = useMemo(() => {
     const map = new Map<string, number>()
@@ -39,11 +61,31 @@ export function EmployeeRequestsPage() {
     [categories]
   )
 
+  const totalPages = Math.max(1, Math.ceil(myRequests.length / pageSize))
+  const safePage = Math.min(currentPage, totalPages)
+  const paginatedRequests = useMemo(
+    () => myRequests.slice((safePage - 1) * pageSize, safePage * pageSize),
+    [myRequests, safePage, pageSize]
+  )
+
   function getBalanceDisplay(categoryId: string, accrualMethod: string): string {
     if (accrualMethod === "unlimited") return "Unlimited"
     const days = balanceMap.get(categoryId)
     if (days === undefined) return "—"
     return `${days} ${days === 1 ? "day" : "days"}`
+  }
+
+  function handleWithdrawConfirm() {
+    if (!withdrawTarget) return
+    withdrawMutation.mutate(withdrawTarget.id, {
+      onSuccess: () => {
+        addToast({ variant: "success", title: "Request withdrawn", description: "Your time off request has been withdrawn." })
+        setWithdrawTarget(null)
+      },
+      onError: () => {
+        addToast({ variant: "error", title: "Failed to withdraw", description: "Something went wrong. Please try again." })
+      },
+    })
   }
 
   return (
@@ -72,12 +114,12 @@ export function EmployeeRequestsPage() {
             {activeCategories.map((cat) => (
               <div
                 key={cat.id}
-                className="bg-card border border-border rounded-xl shadow-xs px-6 py-4 flex flex-col gap-2 flex-1 min-w-[140px]"
+                className="bg-card border border-border rounded-xl shadow-xs px-5 py-4 flex flex-col gap-2 flex-1 min-w-[140px]"
               >
-                <p className="text-sm font-medium tracking-tight text-foreground">
+                <p className="text-sm font-medium tracking-[-0.28px] text-foreground">
                   {cat.name}{cat.emoji ? ` ${cat.emoji}` : ""}
                 </p>
-                <p className="text-2xl font-medium tracking-tight text-foreground whitespace-nowrap">
+                <p className="text-xl font-medium tracking-[-0.4px] text-foreground whitespace-nowrap">
                   {getBalanceDisplay(cat.id, cat.accrual_method)}
                 </p>
               </div>
@@ -91,11 +133,10 @@ export function EmployeeRequestsPage() {
           <div className="rounded-xl border border-border overflow-hidden">
             {/* Header row */}
             <div className="flex bg-secondary">
-              <DataTableHeaderCell type="checkbox" className="w-10" />
-              <DataTableHeaderCell type="text" label="Request category" className="flex-1" />
-              <DataTableHeaderCell type="text" label="Period" className="w-[200px]" />
+              <DataTableHeaderCell type="text" label="Request category" className="w-[260px] pl-4" />
+              <DataTableHeaderCell type="text" label="Period" className="w-[240px]" />
               <DataTableHeaderCell type="text" label="Comment" className="flex-1" />
-              <DataTableHeaderCell type="text" label="Status" className="w-[110px]" />
+              <DataTableHeaderCell type="text" label="Status" className="w-[240px]" />
               <div className="bg-secondary border-b border-border w-14 shrink-0" />
             </div>
 
@@ -126,15 +167,15 @@ export function EmployeeRequestsPage() {
               </div>
             ) : (
               <div>
-                {myRequests.map((req, index) => {
-                  const isLast = index === myRequests.length - 1
+                {paginatedRequests.map((req, index) => {
+                  const isLast = index === paginatedRequests.length - 1
+                  const isPending = req.status === "pending"
                   return (
-                    <div key={req.id} className="flex hover:bg-muted/50">
-                      <DataTableCell type="checkbox" size="md" className="w-10" border={!isLast} />
+                    <div key={req.id} className="flex hover:bg-muted/50 cursor-pointer" onClick={() => setDetailsRequest(req)}>
                       <DataTableCell
                         type="text"
                         size="md"
-                        className="flex-1"
+                        className="w-[260px] pl-4"
                         labelClassName="font-medium"
                         label={getCategoryDisplay(req, categoryMap)}
                         border={!isLast}
@@ -142,7 +183,7 @@ export function EmployeeRequestsPage() {
                       <DataTableCell
                         type="text-description"
                         size="md"
-                        className="w-[200px]"
+                        className="w-[240px]"
                         label={formatPeriod(req.start_date, req.end_date)}
                         description={formatDays(req.total_days)}
                         border={!isLast}
@@ -157,7 +198,7 @@ export function EmployeeRequestsPage() {
                       <DataTableCell
                         type="badge"
                         size="md"
-                        className="w-[110px]"
+                        className="w-[240px]"
                         badgeNode={
                           <Badge variant={req.status}>
                             {req.status.charAt(0).toUpperCase() + req.status.slice(1)}
@@ -165,7 +206,76 @@ export function EmployeeRequestsPage() {
                         }
                         border={!isLast}
                       />
-                      <div className="relative flex items-center w-14 h-[72px] px-3 py-2">
+                      <div
+                        className="relative flex items-center justify-center w-14 h-[72px] px-3 py-2"
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        <Popover
+                          open={openPopoverId === req.id}
+                          onOpenChange={(open) =>
+                            setOpenPopoverId(open ? req.id : null)
+                          }
+                        >
+                          <PopoverTrigger asChild>
+                            <Button variant="ghost" size="icon-sm">
+                              <EllipsisIcon className="size-4" />
+                            </Button>
+                          </PopoverTrigger>
+                          <PopoverContent
+                            align="end"
+                            className="p-0 border-0 shadow-none"
+                          >
+                            <ComboboxMenu
+                              groups={
+                                isPending
+                                  ? [
+                                      {
+                                        items: [
+                                          {
+                                            type: "icon",
+                                            icon: <Eye className="size-4" />,
+                                            label: "View details",
+                                            onClick: () => {
+                                              setOpenPopoverId(null)
+                                              setDetailsRequest(req)
+                                            },
+                                          },
+                                        ],
+                                      },
+                                      {
+                                        items: [
+                                          {
+                                            type: "icon",
+                                            variant: "destructive",
+                                            icon: <RotateCcw className="size-4" />,
+                                            label: "Withdraw request",
+                                            onClick: () => {
+                                              setOpenPopoverId(null)
+                                              setWithdrawTarget(req)
+                                            },
+                                          },
+                                        ],
+                                      },
+                                    ]
+                                  : [
+                                      {
+                                        items: [
+                                          {
+                                            type: "icon",
+                                            icon: <Eye className="size-4" />,
+                                            label: "View details",
+                                            onClick: () => {
+                                              setOpenPopoverId(null)
+                                              setDetailsRequest(req)
+                                            },
+                                          },
+                                        ],
+                                      },
+                                    ]
+                              }
+                            />
+                          </PopoverContent>
+                        </Popover>
                         {!isLast && <div className="absolute bottom-0 left-0 right-0 border-b border-border" />}
                       </div>
                     </div>
@@ -174,6 +284,24 @@ export function EmployeeRequestsPage() {
               </div>
             )}
           </div>
+
+          {myRequests.length > 10 && (
+            <DataTablePagination
+              type="detailed"
+              totalRows={myRequests.length}
+              rowsPerPage={String(pageSize)}
+              onRowsPerPageChange={(v) => { setPageSize(Number(v)); setCurrentPage(1) }}
+              rowsPerPageOptions={["10", "20", "30", "50"]}
+              currentPage={safePage}
+              totalPages={totalPages}
+              canPrevious={safePage > 1}
+              canNext={safePage < totalPages}
+              onFirstPage={() => setCurrentPage(1)}
+              onPrevious={() => setCurrentPage((p) => Math.max(1, p - 1))}
+              onNext={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+              onLastPage={() => setCurrentPage(totalPages)}
+            />
+          )}
         </div>
       </div>
 
@@ -181,6 +309,35 @@ export function EmployeeRequestsPage() {
         open={requestModalOpen}
         onOpenChange={setRequestModalOpen}
       />
+
+      <RequestDetailsModal
+        open={!!detailsRequest}
+        onOpenChange={(open) => { if (!open) setDetailsRequest(null) }}
+        request={detailsRequest}
+        categoryMap={categoryMap}
+      />
+
+      <AlertDialog
+        open={!!withdrawTarget}
+        onOpenChange={(open) => {
+          if (!open) setWithdrawTarget(null)
+        }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Withdraw this request?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to cancel your time-off request? You can always submit a new one later if your plans change.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>No, keep it</AlertDialogCancel>
+            <AlertDialogAction onClick={handleWithdrawConfirm}>
+              Yes, withdraw
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   )
 }

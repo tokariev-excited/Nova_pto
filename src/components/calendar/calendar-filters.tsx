@@ -79,7 +79,7 @@ function CalendarFilters({
     <div className="flex items-center justify-between">
       {/* Left: navigation */}
       <div className="flex items-center gap-2">
-        <Button variant="outline" size="sm" onClick={onToday}>
+        <Button variant="secondary" size="sm" onClick={onToday}>
           Today
         </Button>
         <CalendarArrowButton direction="left" onClick={onPrevMonth} />

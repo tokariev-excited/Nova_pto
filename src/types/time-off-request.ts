@@ -1,4 +1,4 @@
-export type TimeOffStatus = "pending" | "approved" | "rejected"
+export type TimeOffStatus = "pending" | "approved" | "rejected" | "withdrawn"
 export type TimeOffType = "vacation" | "sick_leave" | "personal" | "bereavement" | "other"
 export type StartPeriod = "morning" | "midday"
 export type EndPeriod = "midday" | "end_of_day"

@@ -15,6 +15,7 @@ const statusColorMap: Record<TimeOffStatus, string> = {
   approved: "text-[var(--color-success)]",
   rejected: "text-[var(--color-error-foreground)]",
   pending: "text-[var(--color-warning-foreground)]",
+  withdrawn: "text-muted-foreground",
 }
 
 interface RequestDetailsModalProps {
