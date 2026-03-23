@@ -313,10 +313,11 @@ export function TimeOffSetupPage() {
                   items={categories.map((c) => c.id)}
                   strategy={verticalListSortingStrategy}
                 >
-                  {categories.map((cat) => (
+                  {categories.map((cat, index) => (
                     <SortableCategoryRow
                       key={cat.id}
                       category={cat}
+                      isLast={index === categories.length - 1}
                       onToggleActive={handleToggleActive}
                       onEdit={(c) =>
                         navigate(`/time-off-setup/${c.id}/edit`)
@@ -386,7 +387,9 @@ export function TimeOffSetupPage() {
                 />
               </div>
             ) : (
-              holidays.map((holiday) => (
+              holidays.map((holiday, index) => {
+                const isLast = index === holidays.length - 1
+                return (
                 <div key={holiday.id} className="flex">
                   <DataTableCell
                     type="checkbox"
@@ -394,6 +397,7 @@ export function TimeOffSetupPage() {
                     className="w-[28px]"
                     checked={selectedHolidayIds.has(holiday.id)}
                     onCheckedChange={() => handleToggleOne(holiday.id)}
+                    border={!isLast}
                   />
                   <DataTableCell
                     type="text"
@@ -401,6 +405,7 @@ export function TimeOffSetupPage() {
                     label={holiday.name}
                     labelClassName="font-medium"
                     className="flex-1"
+                    border={!isLast}
                   />
                   <DataTableCell
                     type="text-description"
@@ -408,6 +413,7 @@ export function TimeOffSetupPage() {
                     label={formatHolidayDate(holiday.date)}
                     description={getDayOfWeek(holiday.date)}
                     className="flex-1"
+                    border={!isLast}
                   />
                   <DataTableCell
                     type="badge"
@@ -418,6 +424,7 @@ export function TimeOffSetupPage() {
                         {holiday.is_custom ? "Custom" : "Public"}
                       </Badge>
                     }
+                    border={!isLast}
                   />
                   <div
                     className="relative flex items-center justify-center w-14 h-[72px] px-3 py-2"
@@ -491,10 +498,11 @@ export function TimeOffSetupPage() {
                         />
                       </PopoverContent>
                     </Popover>
-                    <div className="absolute bottom-0 left-0 right-0 border-b border-border" />
+                    {!isLast && <div className="absolute bottom-0 left-0 right-0 border-b border-border" />}
                   </div>
                 </div>
-              ))
+                )
+              })
             )}
           </div>
         )}

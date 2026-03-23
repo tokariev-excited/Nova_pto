@@ -416,7 +416,9 @@ export function EmployeesPage() {
             </div>
           ) : (
             <div>
-              {paginatedEmployees.map((emp) => (
+              {paginatedEmployees.map((emp, index) => {
+                const isLast = index === paginatedEmployees.length - 1
+                return (
                 <div
                   key={emp.id}
                   className={`flex hover:bg-muted/50${emp.status === "active" ? " cursor-pointer" : ""}`}
@@ -439,6 +441,7 @@ export function EmployeesPage() {
                           return next
                         })
                       }}
+                      border={!isLast}
                     />
                   </div>
                   <DataTableCell
@@ -458,6 +461,7 @@ export function EmployeesPage() {
                       getDisplayName(emp.first_name, emp.last_name) || "—"
                     }
                     highlightQuery={debouncedSearch}
+                    border={!isLast}
                   />
                   <DataTableCell
                     type="text"
@@ -465,6 +469,7 @@ export function EmployeesPage() {
                     className="w-[260px]"
                     label={emp.email}
                     highlightQuery={debouncedSearch}
+                    border={!isLast}
                   />
                   <DataTableCell
                     type="text"
@@ -476,6 +481,7 @@ export function EmployeesPage() {
                         ? departmentMap.get(emp.department_id) ?? "—"
                         : "—"
                     }
+                    border={!isLast}
                   />
                   <DataTableCell
                     type="badge"
@@ -486,18 +492,21 @@ export function EmployeesPage() {
                         {emp.role === "admin" ? "Admin" : "User"}
                       </Badge>
                     }
+                    border={!isLast}
                   />
                   <DataTableCell
                     type="text"
                     size="md"
                     className="w-[160px]"
                     label={emp.location ?? "—"}
+                    border={!isLast}
                   />
                   <DataTableCell
                     type="text"
                     size="md"
                     className="w-[120px]"
                     label={formatDate(emp.hire_date)}
+                    border={!isLast}
                   />
                   <div
                     className="relative flex items-center justify-center w-[56px] h-[72px] px-3 py-2"
@@ -604,10 +613,11 @@ export function EmployeesPage() {
                         />
                       </PopoverContent>
                     </Popover>
-                    <div className="absolute bottom-0 left-0 right-0 border-b border-border" />
+                    {!isLast && <div className="absolute bottom-0 left-0 right-0 border-b border-border" />}
                   </div>
                 </div>
-              ))}
+                )
+              })}
             </div>
           )}
         </div>

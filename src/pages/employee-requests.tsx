@@ -126,44 +126,51 @@ export function EmployeeRequestsPage() {
               </div>
             ) : (
               <div>
-                {myRequests.map((req) => (
-                  <div key={req.id} className="flex hover:bg-muted/50">
-                    <DataTableCell type="checkbox" size="md" className="w-10" />
-                    <DataTableCell
-                      type="text"
-                      size="md"
-                      className="flex-1"
-                      labelClassName="font-medium"
-                      label={getCategoryDisplay(req, categoryMap)}
-                    />
-                    <DataTableCell
-                      type="text-description"
-                      size="md"
-                      className="w-[200px]"
-                      label={formatPeriod(req.start_date, req.end_date)}
-                      description={formatDays(req.total_days)}
-                    />
-                    <DataTableCell
-                      type="text"
-                      size="md"
-                      className="flex-1"
-                      label={req.comment ?? "—"}
-                    />
-                    <DataTableCell
-                      type="badge"
-                      size="md"
-                      className="w-[110px]"
-                      badgeNode={
-                        <Badge variant={req.status}>
-                          {req.status.charAt(0).toUpperCase() + req.status.slice(1)}
-                        </Badge>
-                      }
-                    />
-                    <div className="relative flex items-center w-14 h-[72px] px-3 py-2">
-                      <div className="absolute bottom-0 left-0 right-0 border-b border-border" />
+                {myRequests.map((req, index) => {
+                  const isLast = index === myRequests.length - 1
+                  return (
+                    <div key={req.id} className="flex hover:bg-muted/50">
+                      <DataTableCell type="checkbox" size="md" className="w-10" border={!isLast} />
+                      <DataTableCell
+                        type="text"
+                        size="md"
+                        className="flex-1"
+                        labelClassName="font-medium"
+                        label={getCategoryDisplay(req, categoryMap)}
+                        border={!isLast}
+                      />
+                      <DataTableCell
+                        type="text-description"
+                        size="md"
+                        className="w-[200px]"
+                        label={formatPeriod(req.start_date, req.end_date)}
+                        description={formatDays(req.total_days)}
+                        border={!isLast}
+                      />
+                      <DataTableCell
+                        type="text"
+                        size="md"
+                        className="flex-1"
+                        label={req.comment ?? "—"}
+                        border={!isLast}
+                      />
+                      <DataTableCell
+                        type="badge"
+                        size="md"
+                        className="w-[110px]"
+                        badgeNode={
+                          <Badge variant={req.status}>
+                            {req.status.charAt(0).toUpperCase() + req.status.slice(1)}
+                          </Badge>
+                        }
+                        border={!isLast}
+                      />
+                      <div className="relative flex items-center w-14 h-[72px] px-3 py-2">
+                        {!isLast && <div className="absolute bottom-0 left-0 right-0 border-b border-border" />}
+                      </div>
                     </div>
-                  </div>
-                ))}
+                  )
+                })}
               </div>
             )}
           </div>

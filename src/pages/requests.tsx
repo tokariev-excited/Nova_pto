@@ -215,10 +215,11 @@ export function RequestsPage() {
             </div>
           ) : (
             <div>
-              {paginatedRequests.map((req) => {
+              {paginatedRequests.map((req, index) => {
                 const days = req.total_days
                 const nameParts = req.employee_name.split(" ")
                 const initials = getInitials(nameParts[0], nameParts.slice(1).join(" "))
+                const isLast = index === paginatedRequests.length - 1
 
                 return (
                   <div key={req.id} className="flex hover:bg-muted/50 cursor-pointer" onClick={() => setDetailsModalRequest(req)}>
@@ -231,6 +232,7 @@ export function RequestsPage() {
                       avatarFallback={initials}
                       label={req.employee_name}
                       highlightQuery={debouncedSearch}
+                      border={!isLast}
                     />
                     <DataTableCell
                       type="text-description"
@@ -238,6 +240,7 @@ export function RequestsPage() {
                       className="w-[200px]"
                       label={formatPeriod(req.start_date, req.end_date)}
                       description={formatDays(days)}
+                      border={!isLast}
                     />
                     <DataTableCell
                       type="text"
@@ -245,12 +248,14 @@ export function RequestsPage() {
                       className="w-[150px]"
                       labelClassName="font-medium"
                       label={getCategoryDisplay(req, categoryMap)}
+                      border={!isLast}
                     />
                     <DataTableCell
                       type="text"
                       size="md"
                       className="flex-1"
                       label={req.comment ?? "—"}
+                      border={!isLast}
                     />
                     <DataTableCell
                       type="badge"
@@ -261,6 +266,7 @@ export function RequestsPage() {
                           {req.status.charAt(0).toUpperCase() + req.status.slice(1)}
                         </Badge>
                       }
+                      border={!isLast}
                     />
                     <div className="relative flex items-center justify-end gap-2 w-24 h-[72px] px-3 py-2">
                       {req.status === "pending" && (
@@ -283,7 +289,7 @@ export function RequestsPage() {
                           </Button>
                         </>
                       )}
-                      <div className="absolute bottom-0 left-0 right-0 border-b border-border" />
+                      {!isLast && <div className="absolute bottom-0 left-0 right-0 border-b border-border" />}
                     </div>
                   </div>
                 )

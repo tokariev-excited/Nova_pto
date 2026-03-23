@@ -11,6 +11,7 @@ import type { TimeOffCategory } from "@/types/time-off-category"
 
 interface SortableCategoryRowProps {
   category: TimeOffCategory
+  isLast?: boolean
   onToggleActive: (category: TimeOffCategory) => void
   onEdit: (category: TimeOffCategory) => void
   onDelete: (category: TimeOffCategory) => void
@@ -18,6 +19,7 @@ interface SortableCategoryRowProps {
 
 export const SortableCategoryRow = memo(function SortableCategoryRow({
   category,
+  isLast = false,
   onToggleActive,
   onEdit,
   onDelete,
@@ -50,7 +52,7 @@ export const SortableCategoryRow = memo(function SortableCategoryRow({
         {...listeners}
       >
         <GripVerticalIcon className="size-4 text-muted-foreground" />
-        <div className="absolute bottom-0 left-0 right-0 border-b border-border" />
+        {!isLast && <div className="absolute bottom-0 left-0 right-0 border-b border-border" />}
       </div>
       <div onClick={(e) => e.stopPropagation()}>
         <DataTableCell
@@ -59,6 +61,7 @@ export const SortableCategoryRow = memo(function SortableCategoryRow({
           className="w-[100px]"
           switchChecked={category.is_active}
           onSwitchChange={() => onToggleActive(category)}
+          border={!isLast}
         />
       </div>
       <DataTableCell
@@ -67,6 +70,7 @@ export const SortableCategoryRow = memo(function SortableCategoryRow({
         className="w-[320px]"
         labelClassName="font-medium"
         label={`${category.emoji ?? ""} ${category.name}`.trim()}
+        border={!isLast}
       />
       <DataTableCell
         type="badge"
@@ -77,6 +81,7 @@ export const SortableCategoryRow = memo(function SortableCategoryRow({
             {category.leave_type === "paid" ? "Paid" : "Unpaid"}
           </Badge>
         }
+        border={!isLast}
       />
       <DataTableCell
         type="text-description"
@@ -85,6 +90,7 @@ export const SortableCategoryRow = memo(function SortableCategoryRow({
         label={policy.main}
         description={policy.subtitle}
         showDescription={!!policy.subtitle}
+        border={!isLast}
       />
       <div className="relative flex items-center justify-center gap-2 w-24 h-[72px] px-3 py-2">
         <Button
@@ -101,7 +107,7 @@ export const SortableCategoryRow = memo(function SortableCategoryRow({
         >
           <Trash2 className="size-4 text-muted-foreground" />
         </Button>
-        <div className="absolute bottom-0 left-0 right-0 border-b border-border" />
+        {!isLast && <div className="absolute bottom-0 left-0 right-0 border-b border-border" />}
       </div>
     </div>
   )

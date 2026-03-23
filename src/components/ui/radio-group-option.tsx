@@ -32,8 +32,11 @@ function RadioGroupOption({
         "group flex items-start cursor-pointer outline-none",
         "disabled:opacity-50 disabled:cursor-not-allowed",
         variant === "card" && [
-          "gap-2 px-4 py-3 rounded-[calc(var(--radius)-2px)] border border-border",
-          "bg-background data-[state=checked]:shadow-xs",
+          "gap-2 px-4 py-3 rounded-[calc(var(--radius)-2px)] border border-border bg-background",
+          "data-[state=checked]:shadow-xs",
+          error
+            ? "data-[state=checked]:border-destructive"
+            : "data-[state=checked]:border-success",
         ],
         variant === "default" &&
           (orientation === "left" ? "gap-3" : "gap-2"),

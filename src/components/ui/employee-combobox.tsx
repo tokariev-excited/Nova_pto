@@ -135,6 +135,8 @@ function EmployeeCombobox({
         className="p-1"
         style={{ width: "var(--radix-popover-trigger-width)" }}
         onOpenAutoFocus={(e) => e.preventDefault()}
+        onFocusOutside={(e) => e.preventDefault()}
+        onPointerDownOutside={(e) => e.preventDefault()}
       >
         <div className="max-h-[160px] overflow-y-auto">
         {results.map((employee) => {
