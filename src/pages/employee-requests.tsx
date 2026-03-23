@@ -1,4 +1,5 @@
 import { useState, useMemo } from "react"
+import { BalanceOverview } from "@/components/balance-overview"
 import { CalendarClock, EllipsisIcon, Eye, FileSearch, ListCheck, RotateCcw } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
@@ -22,9 +23,8 @@ import {
 } from "@/components/ui/alert-dialog"
 import { SubmitTimeOffRequestModal } from "@/components/submit-time-off-request-modal"
 import { RequestDetailsModal } from "@/components/request-details-modal"
-import { useMyTimeOffRequests, useEmployeeBalances, useWithdrawRequestMutation } from "@/hooks/use-time-off-requests"
+import { useMyTimeOffRequests, useWithdrawRequestMutation } from "@/hooks/use-time-off-requests"
 import { useTimeOffCategories } from "@/hooks/use-time-off-categories"
-import { useAuth } from "@/hooks/use-auth"
 import { formatPeriod, formatDays } from "@/lib/date-utils"
 import { getCategoryDisplay } from "@/lib/request-display"
 import { addToast } from "@/lib/toast"
@@ -38,17 +38,9 @@ export function EmployeeRequestsPage() {
   const [pageSize, setPageSize] = useState(10)
   const [currentPage, setCurrentPage] = useState(1)
 
-  const { profile } = useAuth()
   const { data: myRequests = [], isLoading } = useMyTimeOffRequests()
-  const { data: balances = [] } = useEmployeeBalances(profile?.id)
   const { data: categories = [] } = useTimeOffCategories()
   const withdrawMutation = useWithdrawRequestMutation()
-
-  const balanceMap = useMemo(() => {
-    const map = new Map<string, number>()
-    for (const b of balances) map.set(b.category_id, b.remaining_days)
-    return map
-  }, [balances])
 
   const categoryMap = useMemo(() => {
     const map = new Map<string, { name: string; emoji?: string | null }>()
@@ -56,24 +48,12 @@ export function EmployeeRequestsPage() {
     return map
   }, [categories])
 
-  const activeCategories = useMemo(
-    () => categories.filter((c) => c.is_active).sort((a, b) => a.sort_order - b.sort_order),
-    [categories]
-  )
-
   const totalPages = Math.max(1, Math.ceil(myRequests.length / pageSize))
   const safePage = Math.min(currentPage, totalPages)
   const paginatedRequests = useMemo(
     () => myRequests.slice((safePage - 1) * pageSize, safePage * pageSize),
     [myRequests, safePage, pageSize]
   )
-
-  function getBalanceDisplay(categoryId: string, accrualMethod: string): string {
-    if (accrualMethod === "unlimited") return "Unlimited"
-    const days = balanceMap.get(categoryId)
-    if (days === undefined) return "—"
-    return `${days} ${days === 1 ? "day" : "days"}`
-  }
 
   function handleWithdrawConfirm() {
     if (!withdrawTarget) return
@@ -107,25 +87,7 @@ export function EmployeeRequestsPage() {
 
       {/* Body */}
       <div className="flex flex-col gap-5 p-4">
-        {/* Balance Overview */}
-        <div className="flex flex-col gap-3">
-          <p className="text-lg font-semibold tracking-tight text-primary">Balance overview</p>
-          <div className="flex gap-4 overflow-x-auto">
-            {activeCategories.map((cat) => (
-              <div
-                key={cat.id}
-                className="bg-card border border-border rounded-xl shadow-xs px-5 py-4 flex flex-col gap-2 flex-1 min-w-[140px]"
-              >
-                <p className="text-sm font-medium tracking-[-0.28px] text-foreground">
-                  {cat.name}{cat.emoji ? ` ${cat.emoji}` : ""}
-                </p>
-                <p className="text-xl font-medium tracking-[-0.4px] text-foreground whitespace-nowrap">
-                  {getBalanceDisplay(cat.id, cat.accrual_method)}
-                </p>
-              </div>
-            ))}
-          </div>
-        </div>
+        <BalanceOverview />
 
         {/* Time Off History */}
         <div className="flex flex-col gap-3">

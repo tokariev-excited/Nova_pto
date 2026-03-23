@@ -2,6 +2,7 @@ import { useState, useMemo } from "react"
 import { CalendarIcon } from "lucide-react"
 
 import { cn } from "@/lib/utils"
+import { isBeforeDate } from "@/lib/date-utils"
 import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover"
 import { CalendarDayButton } from "@/components/ui/calendar-day-button"
 import { CalendarArrowButton } from "@/components/ui/calendar-arrow-button"
@@ -12,6 +13,7 @@ interface DatePickerProps {
   placeholder?: string
   className?: string
   disabled?: boolean
+  minDate?: Date
 }
 
 const DAYS_OF_WEEK = ["Mo", "Tu", "We", "Th", "Fr", "Sa", "Su"]
@@ -55,6 +57,7 @@ function DatePicker({
   placeholder = "Select date",
   className,
   disabled = false,
+  minDate,
 }: DatePickerProps) {
   const [open, setOpen] = useState(false)
   const today = useMemo(() => new Date(), [])
@@ -136,7 +139,15 @@ function DatePicker({
       <PopoverContent className="w-auto p-3" align="start">
         {/* Month navigation */}
         <div className="flex items-center justify-between mb-2">
-          <CalendarArrowButton direction="left" onClick={goToPrevMonth} />
+          <CalendarArrowButton
+            direction="left"
+            onClick={goToPrevMonth}
+            disabled={
+              !!minDate &&
+              (viewYear < minDate.getFullYear() ||
+                (viewYear === minDate.getFullYear() && viewMonth <= minDate.getMonth()))
+            }
+          />
           <span className="text-sm font-medium leading-5 tracking-tight text-foreground">
             {formatMonthYear(viewYear, viewMonth)}
           </span>
@@ -167,13 +178,20 @@ function DatePicker({
               cell.currentMonth &&
               isSameDay(today, new Date(viewYear, viewMonth, cell.day))
 
+            const isPastDate =
+              cell.currentMonth &&
+              minDate != null &&
+              isBeforeDate(new Date(viewYear, viewMonth, cell.day), minDate)
+
+            const isDayDisabled = !cell.currentMonth || isPastDate
+
             return (
               <CalendarDayButton
                 key={idx}
                 label={String(cell.day)}
                 selected={isSelected}
-                disabled={!cell.currentMonth}
-                onClick={() => cell.currentMonth && handleDayClick(cell.day)}
+                disabled={isDayDisabled}
+                onClick={() => !isDayDisabled && handleDayClick(cell.day)}
                 className={cn(
                   !cell.currentMonth && "opacity-30",
                   isToday && !isSelected && "bg-accent font-medium"

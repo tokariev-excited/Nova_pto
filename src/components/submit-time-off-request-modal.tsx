@@ -23,7 +23,7 @@ import { useHolidays } from "@/hooks/use-holidays"
 import { useTimeOffCategories } from "@/hooks/use-time-off-categories"
 import { useEmployeeBalances, useSubmitTimeOffRequestMutation } from "@/hooks/use-time-off-requests"
 import { addToast } from "@/lib/toast"
-import { calculateDays, formatDays, formatLocalDate } from "@/lib/date-utils"
+import { calculateDays, formatDays, formatLocalDate, isBeforeDate } from "@/lib/date-utils"
 import type { TimeOffCategory } from "@/types/time-off-category"
 import type { EmployeeBalance } from "@/types/employee-balance"
 import type { StartPeriod, EndPeriod } from "@/types/time-off-request"
@@ -66,6 +66,9 @@ export function SubmitTimeOffRequestModal({
   onOpenChange,
 }: SubmitTimeOffRequestModalProps) {
   const { profile, workspace } = useAuth()
+  const isAdmin = profile?.role === "admin"
+  const today = useMemo(() => new Date(), [])
+  const minDate = isAdmin ? undefined : today
   const { data: categories = [] } = useTimeOffCategories()
   const { data: holidayRows = [] } = useHolidays()
   const submitMutation = useSubmitTimeOffRequestMutation()
@@ -151,9 +154,15 @@ export function SubmitTimeOffRequestModal({
     selectedBalance != null &&
     totalDays > selectedBalance.remaining_days
 
+  const hasPastDates =
+    !isAdmin &&
+    ((startDate != null && isBeforeDate(startDate, new Date())) ||
+      (endDate != null && isBeforeDate(endDate, new Date())))
+
   const isValid =
     !!categoryId && !!startDate && !!endDate &&
-    totalDays != null && totalDays > 0
+    totalDays != null && totalDays > 0 &&
+    !hasPastDates
 
   function handleSubmit() {
     if (!isValid || !profile || !workspace || !categoryId || !startDate || !endDate || totalDays == null) return
@@ -237,6 +246,7 @@ export function SubmitTimeOffRequestModal({
                   value={startDate}
                   onChange={setStartDate}
                   placeholder="Pick a date"
+                  minDate={minDate}
                 />
               </Field>
               <div className="flex-1">
@@ -262,6 +272,7 @@ export function SubmitTimeOffRequestModal({
                   value={endDate}
                   onChange={setEndDate}
                   placeholder="Pick a date"
+                  minDate={minDate}
                 />
               </Field>
               <div className="flex-1">
@@ -292,6 +303,11 @@ export function SubmitTimeOffRequestModal({
             {insufficientBalance && (
               <p className="text-sm leading-5 tracking-tight text-[var(--color-warning)]">
                 You may not have enough balance ({selectedBalance!.remaining_days} days remaining)
+              </p>
+            )}
+            {hasPastDates && (
+              <p className="text-sm leading-5 tracking-tight text-[var(--color-error)]">
+                Start and end dates cannot be in the past
               </p>
             )}
           </div>

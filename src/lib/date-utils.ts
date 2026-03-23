@@ -89,6 +89,14 @@ export function formatPeriodLabel(period: string): string {
   return labels[period] ?? period
 }
 
+export function isBeforeDate(date: Date, referenceDate: Date): boolean {
+  if (date.getFullYear() < referenceDate.getFullYear()) return true
+  if (date.getFullYear() > referenceDate.getFullYear()) return false
+  if (date.getMonth() < referenceDate.getMonth()) return true
+  if (date.getMonth() > referenceDate.getMonth()) return false
+  return date.getDate() < referenceDate.getDate()
+}
+
 export function formatDateTime(isoString: string) {
   return new Intl.DateTimeFormat("en-US", {
     month: "short",
