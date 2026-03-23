@@ -6,11 +6,12 @@ import {
   fetchEmployee,
   updateEmployee,
   updateEmployeeStatus,
+  bulkUpdateEmployeeStatus,
   inviteEmployee,
   type UpdateEmployeeData,
   type InviteEmployeeData,
 } from "@/lib/employee-service"
-import { employeeKeys, departmentKeys } from "@/lib/query-keys"
+import { employeeKeys, departmentKeys, activeEmployeeKeys } from "@/lib/query-keys"
 import type { EmployeeStatus } from "@/types/employee"
 
 export function useEmployeeList(status: EmployeeStatus) {
@@ -55,6 +56,8 @@ export function useEmployeeStatusMutation() {
       if (workspace) {
         // Invalidate counts and all employee lists at once with a single prefix match
         queryClient.invalidateQueries({ queryKey: employeeKeys.all(workspace.id) })
+        // Also bust the active-employees combobox cache so modals reflect the change immediately
+        queryClient.invalidateQueries({ queryKey: activeEmployeeKeys.list(workspace.id) })
       }
     },
   })
@@ -70,6 +73,24 @@ export function useDeleteEmployeeMutation() {
       if (workspace) {
         // Single prefix-based invalidation instead of 4 separate calls
         queryClient.invalidateQueries({ queryKey: employeeKeys.all(workspace.id) })
+        // Also bust the active-employees combobox cache so modals reflect the change immediately
+        queryClient.invalidateQueries({ queryKey: activeEmployeeKeys.list(workspace.id) })
+      }
+    },
+  })
+}
+
+export function useBulkEmployeeStatusMutation() {
+  const queryClient = useQueryClient()
+  const { workspace } = useAuth()
+
+  return useMutation({
+    mutationFn: ({ ids, status }: { ids: string[]; status: EmployeeStatus }) =>
+      bulkUpdateEmployeeStatus(ids, status),
+    onSuccess: () => {
+      if (workspace) {
+        queryClient.invalidateQueries({ queryKey: employeeKeys.all(workspace.id) })
+        queryClient.invalidateQueries({ queryKey: activeEmployeeKeys.list(workspace.id) })
       }
     },
   })

@@ -1,6 +1,6 @@
 import { useState, useCallback } from "react"
 import { useNavigate } from "react-router-dom"
-import { FileClock, Plus, CalendarSearch, CalendarArrowDown, Pencil, Trash2, EllipsisIcon } from "lucide-react"
+import { FileClock, Plus, CalendarSearch, CalendarArrowDown, Pencil, Trash2, EllipsisIcon, X } from "lucide-react"
 import {
   DndContext,
   closestCenter,
@@ -46,8 +46,12 @@ import {
   useDeleteCategoryMutation,
   useReorderCategoriesMutation,
 } from "@/hooks/use-time-off-categories"
-import { useHolidays, useDeleteHolidayMutation } from "@/hooks/use-holidays"
+import { useQueryClient } from "@tanstack/react-query"
+import { useAuth } from "@/hooks/use-auth"
+import { useHolidays, useDeleteHolidayMutation, useBulkDeleteHolidaysMutation } from "@/hooks/use-holidays"
 import { addToast } from "@/lib/toast"
+import { cn } from "@/lib/utils"
+import { holidayKeys } from "@/lib/query-keys"
 import type { TimeOffCategory } from "@/types/time-off-category"
 import type { Holiday } from "@/types/holiday"
 
@@ -70,8 +74,13 @@ export function TimeOffSetupPage() {
   const deleteMutation = useDeleteCategoryMutation()
   const reorderMutation = useReorderCategoriesMutation()
 
+  const { workspace } = useAuth()
+  const queryClient = useQueryClient()
+
   const { data: holidays = [], isLoading: holidaysLoading, isError: holidaysError, refetch: refetchHolidays } = useHolidays()
   const deleteHolidayMutation = useDeleteHolidayMutation()
+  const bulkDeleteHolidaysMutation = useBulkDeleteHolidaysMutation()
+  const [bulkHolidayDeleteOpen, setBulkHolidayDeleteOpen] = useState(false)
 
   const sensors = useSensors(
     useSensor(PointerSensor),
@@ -180,6 +189,29 @@ export function TimeOffSetupPage() {
       },
     })
   }, [deleteHolidayTarget, deleteHolidayMutation])
+
+  const handleBulkDeleteHolidaysConfirm = useCallback(() => {
+    if (!workspace) return
+    const ids = [...selectedHolidayIds]
+    queryClient.setQueryData(
+      holidayKeys.list(workspace.id),
+      (old: Holiday[] | undefined) => (old ?? []).filter((h) => !ids.includes(h.id))
+    )
+    setSelectedHolidayIds(new Set())
+    setBulkHolidayDeleteOpen(false)
+    bulkDeleteHolidaysMutation.mutate(ids, {
+      onSuccess: () => {
+        addToast({
+          title: `Successfully deleted ${ids.length} holiday${ids.length > 1 ? "s" : ""}`,
+          variant: "success",
+        })
+      },
+      onError: () => {
+        queryClient.invalidateQueries({ queryKey: holidayKeys.all(workspace.id) })
+        addToast({ title: "Failed to delete holidays", variant: "error" })
+      },
+    })
+  }, [selectedHolidayIds, workspace, queryClient, bulkDeleteHolidaysMutation])
 
   return (
     <div className="flex flex-col size-full">
@@ -468,6 +500,38 @@ export function TimeOffSetupPage() {
         )}
       </div>
 
+      {/* Floating Holidays Bulk Action Bar */}
+      <div
+        className={cn(
+          "fixed bottom-6 left-1/2 -translate-x-1/2 z-50",
+          "flex items-center gap-1 p-1",
+          "bg-neutral-900 text-white rounded-xl shadow-2xl border border-white/10",
+          "transition-all duration-200 ease-out",
+          selectedHolidayIds.size > 0
+            ? "opacity-100 translate-y-0 pointer-events-auto"
+            : "opacity-0 translate-y-3 pointer-events-none"
+        )}
+      >
+        <button
+          onClick={() => setSelectedHolidayIds(new Set())}
+          className="flex items-center gap-1.5 px-3 py-1.5 rounded-[10px] hover:bg-white/10 transition-colors"
+        >
+          <X className="size-3.5 text-slate-300 shrink-0" />
+          <span className="text-sm font-medium whitespace-nowrap text-slate-300">
+            {selectedHolidayIds.size} selected
+          </span>
+        </button>
+        <div className="w-px h-4 bg-white/20 shrink-0 mx-1" />
+        <button
+          onClick={() => setBulkHolidayDeleteOpen(true)}
+          disabled={bulkDeleteHolidaysMutation.isPending}
+          className="flex items-center gap-1.5 px-3 py-1.5 rounded-[10px] hover:bg-white/10 transition-colors disabled:opacity-50 whitespace-nowrap text-red-400 hover:text-red-300"
+        >
+          <Trash2 className="size-3.5 shrink-0" />
+          <span className="text-sm font-medium">Delete</span>
+        </button>
+      </div>
+
       {/* Delete confirmation dialog */}
       <AlertDialog
         open={!!deleteTarget}
@@ -517,6 +581,30 @@ export function TimeOffSetupPage() {
             <AlertDialogAction
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
               onClick={handleDeleteHoliday}
+            >
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Bulk delete holidays confirmation dialog */}
+      <AlertDialog open={bulkHolidayDeleteOpen} onOpenChange={setBulkHolidayDeleteOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              Delete {selectedHolidayIds.size} holiday{selectedHolidayIds.size !== 1 ? "s" : ""}
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete {selectedHolidayIds.size} holiday{selectedHolidayIds.size !== 1 ? "s" : ""}?
+              This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              onClick={handleBulkDeleteHolidaysConfirm}
             >
               Delete
             </AlertDialogAction>

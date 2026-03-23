@@ -16,6 +16,18 @@ export async function updateEmployeeStatus(
   return data
 }
 
+export async function bulkUpdateEmployeeStatus(
+  ids: string[],
+  status: EmployeeStatus
+) {
+  const { error } = await supabase
+    .from("profiles")
+    .update({ status })
+    .in("id", ids)
+
+  if (error) throw error
+}
+
 export async function fetchEmployees(
   workspaceId: string,
   status: EmployeeStatus,

@@ -117,7 +117,7 @@ export function DataTablePagination({
       {...props}
     >
       <p className="shrink-0 text-sm font-normal leading-6 text-muted-foreground whitespace-nowrap">
-        {selectedCount} of {totalRows} row(s) selected.
+        {selectedCount > 0 && `${selectedCount} of ${totalRows} row(s) selected.`}
       </p>
 
       <div className={cn("flex items-center pl-2", type === "detailed" ? "gap-9" : "gap-2")}>

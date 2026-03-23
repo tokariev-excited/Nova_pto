@@ -86,6 +86,15 @@ export async function deleteHoliday(holidayId: string): Promise<void> {
   if (error) throw error
 }
 
+export async function bulkDeleteHolidays(ids: string[]): Promise<void> {
+  const { error } = await supabase
+    .from("holidays")
+    .delete()
+    .in("id", ids)
+
+  if (error) throw error
+}
+
 export async function replaceImportedHolidays(
   workspaceId: string,
   holidays: ReplaceHolidayItem[]

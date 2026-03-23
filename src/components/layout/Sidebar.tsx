@@ -18,6 +18,7 @@ import { SidebarGroup } from "@/components/ui/sidebar-group"
 import { SidebarMenuItem } from "@/components/ui/sidebar-menu-item"
 import { SidebarMenuButton } from "@/components/ui/sidebar-menu-button"
 import { Avatar } from "@/components/ui/avatar"
+import { TooltipProvider, Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip"
 
 const adminNavItems = [
   { label: "Requests", icon: ListCheck, path: "/requests" },
@@ -103,19 +104,26 @@ export function Sidebar() {
           fallback={initials}
         />
         <div className="flex min-w-0 flex-1 flex-col gap-0.5">
-          <span className="truncate text-sm font-semibold leading-none text-sidebar-foreground">
+          <span className="truncate text-sm font-semibold leading-normal text-sidebar-foreground">
             {displayName}
           </span>
           <span className="truncate text-xs leading-4 tracking-tight text-sidebar-foreground">
             {email}
           </span>
         </div>
-        <button
-          onClick={signOut}
-          className="flex size-8 shrink-0 items-center justify-center rounded-md text-sidebar-foreground opacity-50 transition-colors hover:bg-sidebar-accent hover:opacity-100"
-        >
-          <LogOut className="size-4" />
-        </button>
+        <TooltipProvider>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <button
+                onClick={signOut}
+                className="flex size-8 shrink-0 items-center justify-center rounded-md text-sidebar-foreground opacity-50 transition-colors hover:bg-sidebar-accent hover:opacity-100"
+              >
+                <LogOut className="size-4" />
+              </button>
+            </TooltipTrigger>
+            <TooltipContent side="right">Logout</TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
       </div>
     </aside>
   )

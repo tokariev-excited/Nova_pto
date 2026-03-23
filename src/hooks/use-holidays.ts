@@ -5,6 +5,7 @@ import {
   createHoliday,
   updateHoliday,
   deleteHoliday,
+  bulkDeleteHolidays,
   replaceImportedHolidays,
 } from "@/lib/holiday-service"
 import type { ReplaceHolidayItem, UpdateHolidayData } from "@/lib/holiday-service"
@@ -37,6 +38,20 @@ export function useImportHolidaysMutation() {
       if (!workspace) throw new Error("No workspace")
       await replaceImportedHolidays(workspace.id, items)
     },
+    onSuccess: () => {
+      if (workspace) {
+        queryClient.invalidateQueries({ queryKey: holidayKeys.all(workspace.id) })
+      }
+    },
+  })
+}
+
+export function useBulkDeleteHolidaysMutation() {
+  const queryClient = useQueryClient()
+  const { workspace } = useAuth()
+
+  return useMutation({
+    mutationFn: (ids: string[]) => bulkDeleteHolidays(ids),
     onSuccess: () => {
       if (workspace) {
         queryClient.invalidateQueries({ queryKey: holidayKeys.all(workspace.id) })

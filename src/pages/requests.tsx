@@ -65,12 +65,9 @@ export function RequestsPage() {
       result = result.filter((r) => r.status === activeTab)
     }
     if (debouncedSearch.trim()) {
-      const q = debouncedSearch.toLowerCase()
-      result = result.filter(
-        (r) =>
-          r.employee_name.toLowerCase().includes(q) ||
-          r.employee_email.toLowerCase().includes(q) ||
-          (r.comment?.toLowerCase().includes(q) ?? false)
+      const q = debouncedSearch.trim().replace(/\s+/g, " ").toLowerCase()
+      result = result.filter((r) =>
+        r.employee_name.trim().replace(/\s+/g, " ").toLowerCase().includes(q)
       )
     }
     return result
@@ -164,8 +161,7 @@ export function RequestsPage() {
         <div className="rounded-lg border border-border overflow-hidden">
           {/* Header row */}
           <div className="flex bg-secondary">
-            <DataTableHeaderCell type="checkbox" className="w-10" />
-            <DataTableHeaderCell type="text" label="Employee" className="flex-1" />
+            <DataTableHeaderCell type="text" label="Employee" className="w-[260px] pl-4" />
             <DataTableHeaderCell type="text" label="Period" className="w-[200px]" />
             <DataTableHeaderCell type="text" label="Request type" className="w-[150px]" />
             <DataTableHeaderCell type="text" label="Comment" className="flex-1" />
@@ -197,7 +193,7 @@ export function RequestsPage() {
             <div className="flex items-center justify-center py-16">
               <Empty
                 media={{ type: "icon", icon: ListX }}
-                title={searchQuery ? "No requests found" : "No requests yet"}
+                title={searchQuery ? `No requests found for "${debouncedSearch.trim()}"` : "No requests yet"}
                 description={
                   searchQuery
                     ? "Try adjusting your search terms"
@@ -227,18 +223,14 @@ export function RequestsPage() {
                 return (
                   <div key={req.id} className="flex hover:bg-muted/50 cursor-pointer" onClick={() => setDetailsModalRequest(req)}>
                     <DataTableCell
-                      type="checkbox"
-                      size="md"
-                      className="w-10"
-                    />
-                    <DataTableCell
                       type="avatar"
                       size="md"
-                      className="flex-1"
+                      className="w-[260px] pl-4"
                       avatarSrc={req.employee_avatar_url}
                       avatarAlt={req.employee_name}
                       avatarFallback={initials}
                       label={req.employee_name}
+                      highlightQuery={debouncedSearch}
                     />
                     <DataTableCell
                       type="text-description"
@@ -303,7 +295,6 @@ export function RequestsPage() {
         {filteredRequests.length > 10 && (
           <DataTablePagination
             type="detailed"
-            selectedCount={0}
             totalRows={filteredRequests.length}
             rowsPerPage={String(pageSize)}
             onRowsPerPageChange={(v) => { setPageSize(Number(v)); setCurrentPage(1) }}

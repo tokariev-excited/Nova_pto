@@ -3,6 +3,7 @@ import { cva, type VariantProps } from "class-variance-authority"
 import { EllipsisIcon, GripVerticalIcon } from "lucide-react"
 
 import { cn } from "@/lib/utils"
+import { HighlightText } from "@/components/ui/highlight-text"
 import { Avatar } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -80,6 +81,9 @@ export interface DataTableCellProps extends React.ComponentProps<"div"> {
 
   // Input (for "input")
   inputProps?: React.ComponentProps<"input">
+
+  // Highlight (for search matching)
+  highlightQuery?: string
 }
 
 const cellVariants = cva(
@@ -140,9 +144,16 @@ function DataTableCell({
   toggleValue,
   onToggleChange,
   children,
+  highlightQuery,
   inputProps,
   ...props
 }: DataTableCellProps) {
+  function renderLabel(text: string | undefined) {
+    if (!text) return null
+    if (!highlightQuery) return text
+    return <HighlightText text={text} query={highlightQuery} />
+  }
+
   function renderContent() {
     switch (type) {
       case "checkbox":
@@ -158,7 +169,7 @@ function DataTableCell({
           <>
             {showLeftIcon && leftIcon}
             <p className={cn("flex-1 min-w-0 truncate text-sm font-normal leading-5 tracking-tight text-foreground", labelClassName)}>
-              {label}
+              {renderLabel(label)}
             </p>
             {showRightIcon && rightIcon}
           </>
@@ -168,11 +179,11 @@ function DataTableCell({
         return (
           <div className="flex flex-1 min-w-0 flex-col gap-1">
             <p className="truncate text-sm font-medium leading-5 tracking-tight text-foreground">
-              {label}
+              {renderLabel(label)}
             </p>
             {showDescription && (
               <p className="truncate text-sm font-normal text-muted-foreground">
-                {description}
+                {renderLabel(description)}
               </p>
             )}
           </div>
@@ -189,7 +200,7 @@ function DataTableCell({
               shape="square"
             />
             <p className="flex-1 min-w-0 truncate text-sm font-medium leading-5 tracking-tight text-foreground">
-              {label}
+              {renderLabel(label)}
             </p>
           </>
         )
@@ -206,11 +217,11 @@ function DataTableCell({
             />
             <div className="flex flex-1 min-w-0 flex-col gap-1">
               <p className="truncate text-sm font-medium leading-5 tracking-tight text-foreground">
-                {label}
+                {renderLabel(label)}
               </p>
               {showDescription && (
                 <p className="truncate text-sm font-normal text-muted-foreground">
-                  {description}
+                  {renderLabel(description)}
                 </p>
               )}
             </div>
@@ -229,7 +240,7 @@ function DataTableCell({
               className="size-10 shrink-0 rounded-[calc(var(--radius)-4px)] object-cover"
             />
             <p className="flex-1 min-w-0 truncate text-sm font-normal leading-5 tracking-tight text-foreground">
-              {label}
+              {renderLabel(label)}
             </p>
           </>
         )
@@ -269,7 +280,7 @@ function DataTableCell({
 
       case "footer":
         return (
-          <p className="text-sm text-muted-foreground">{label}</p>
+          <p className="text-sm text-muted-foreground">{renderLabel(label)}</p>
         )
 
       default:
