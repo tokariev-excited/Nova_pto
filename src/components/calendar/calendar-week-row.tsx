@@ -1,6 +1,7 @@
 import { useState, useMemo } from "react"
 import { Plus } from "lucide-react"
 import { cn } from "@/lib/utils"
+import { formatLocalDate } from "@/lib/date-utils"
 import { CalendarDayButton } from "@/components/ui/calendar-day-button"
 import { CalendarEventBar } from "./calendar-event-bar"
 import type { CalendarWeek, CalendarEvent } from "@/lib/calendar-utils"
@@ -10,11 +11,13 @@ interface CalendarWeekRowProps {
   onEventClick: (event: CalendarEvent) => void
   onDayClick: (date: string) => void
   isLastWeek?: boolean
+  isAdmin?: boolean
 }
 
-function CalendarWeekRow({ week, onEventClick, onDayClick, isLastWeek = false }: CalendarWeekRowProps) {
+function CalendarWeekRow({ week, onEventClick, onDayClick, isLastWeek = false, isAdmin }: CalendarWeekRowProps) {
   const [hoveredCol, setHoveredCol] = useState<number | null>(null)
   const laneCount = Math.max(week.laneCount, 0)
+  const todayStr = useMemo(() => formatLocalDate(new Date()), [])
 
   // Compute per-column max lane (0-indexed, -1 means no events)
   const colMaxLane = useMemo(() => {
@@ -41,26 +44,31 @@ function CalendarWeekRow({ week, onEventClick, onDayClick, isLastWeek = false }:
       }}
     >
       {/* Background cells — span all rows, handle borders & hover */}
-      {week.days.map((day, col) => (
-        <div
-          key={`bg-${day.date}`}
-          className={cn(
-            "border-border relative cursor-pointer",
-            !isLastWeek && "border-b",
-            col < 6 && "[border-right:1px_solid_var(--color-border)]",
-            day.isWeekend
-              ? "bg-primary-foreground"
-              : "hover:bg-primary-foreground",
-          )}
-          style={{
-            gridColumn: col + 1,
-            gridRow: "1 / -1",
-          }}
-          onClick={() => onDayClick(day.date)}
-          onMouseEnter={() => setHoveredCol(col)}
-          onMouseLeave={() => setHoveredCol(null)}
-        />
-      ))}
+      {week.days.map((day, col) => {
+        const isPast = !isAdmin && day.date < todayStr
+
+        return (
+          <div
+            key={`bg-${day.date}`}
+            className={cn(
+              "border-border relative",
+              isPast ? "cursor-default" : "cursor-pointer",
+              !isLastWeek && "border-b",
+              col < 6 && "[border-right:1px_solid_var(--color-border)]",
+              day.isWeekend
+                ? "bg-primary-foreground"
+                : !isPast && "hover:bg-primary-foreground",
+            )}
+            style={{
+              gridColumn: col + 1,
+              gridRow: "1 / -1",
+            }}
+            onClick={isPast ? undefined : () => onDayClick(day.date)}
+            onMouseEnter={isPast ? undefined : () => setHoveredCol(col)}
+            onMouseLeave={isPast ? undefined : () => setHoveredCol(null)}
+          />
+        )
+      })}
 
       {/* Day number buttons — row 1 */}
       {week.days.map((day, col) => (
@@ -102,6 +110,9 @@ function CalendarWeekRow({ week, onEventClick, onDayClick, isLastWeek = false }:
 
       {/* Hover affordance pills — one per column, positioned after last event */}
       {week.days.map((day, col) => {
+        const isPast = !isAdmin && day.date < todayStr
+        if (isPast) return null
+
         // Place hover pill at the lane after the last event in this column
         // colMaxLane[col] is -1 if no events, 0 if 1 event in lane 0, etc.
         // Grid row: lane 0 = row 2, so hover goes to row (maxLane + 1) + 2 = maxLane + 3

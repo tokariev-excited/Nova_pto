@@ -1,5 +1,5 @@
 import { useState, useMemo, useCallback, startTransition } from "react"
-import { CalendarDays, CalendarClock } from "lucide-react"
+import { Calendar, CalendarClock } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import { Separator } from "@/components/ui/separator"
@@ -58,6 +58,12 @@ export function CalendarPage() {
     let result = requests.filter(
       (r) => r.status === "approved" || r.status === "pending"
     )
+    // Non-admins: hide other users' pending requests
+    if (!isAdmin && profile) {
+      result = result.filter(
+        (r) => r.status === "approved" || r.profile_id === profile.id
+      )
+    }
     if (selectedUser !== "all") {
       result = result.filter((r) => r.profile_id === selectedUser)
     }
@@ -65,7 +71,7 @@ export function CalendarPage() {
       result = result.filter((r) => r.category_id === selectedCategory)
     }
     return result
-  }, [requests, selectedUser, selectedCategory])
+  }, [requests, selectedUser, selectedCategory, isAdmin, profile])
 
   // Compute the visible date range for filtering holidays
   const year = currentMonth.getFullYear()
@@ -175,7 +181,7 @@ export function CalendarPage() {
       {/* Header */}
       <div className="flex items-center gap-2 border-b border-border px-4 h-[60px] shrink-0">
         <button className="flex items-center justify-center size-7 rounded-[10px] shrink-0 text-foreground hover:bg-accent transition-colors">
-          <CalendarDays className="size-4" />
+          <Calendar className="size-4" />
         </button>
         <div className="flex items-center h-6 pr-2 relative shrink-0">
           <Separator orientation="vertical" />
@@ -220,6 +226,7 @@ export function CalendarPage() {
           weeks={calendarWeeks}
           onEventClick={handleEventClick}
           onDayClick={handleDayClick}
+          isAdmin={isAdmin}
         />
       </div>
 
@@ -242,6 +249,7 @@ export function CalendarPage() {
         onOpenChange={(open) => { if (!open) setDetailsModalRequest(null) }}
         request={detailsModalRequest}
         categoryMap={detailsCategoryMap}
+        canSeeComment={isAdmin || detailsModalRequest?.profile_id === profile?.id}
       />
     </div>
   )

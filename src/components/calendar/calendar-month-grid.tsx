@@ -8,9 +8,10 @@ interface CalendarMonthGridProps {
   weeks: CalendarWeek[]
   onEventClick: (event: CalendarEvent) => void
   onDayClick: (date: string) => void
+  isAdmin?: boolean
 }
 
-function CalendarMonthGrid({ weeks, onEventClick, onDayClick }: CalendarMonthGridProps) {
+function CalendarMonthGrid({ weeks, onEventClick, onDayClick, isAdmin }: CalendarMonthGridProps) {
   return (
     <div className="rounded-lg border border-border overflow-hidden">
       {/* Weekday header row */}
@@ -33,6 +34,7 @@ function CalendarMonthGrid({ weeks, onEventClick, onDayClick }: CalendarMonthGri
           onEventClick={onEventClick}
           onDayClick={onDayClick}
           isLastWeek={i === weeks.length - 1}
+          isAdmin={isAdmin}
         />
       ))}
     </div>

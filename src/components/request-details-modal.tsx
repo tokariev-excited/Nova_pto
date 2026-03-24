@@ -23,6 +23,7 @@ interface RequestDetailsModalProps {
   onOpenChange: (open: boolean) => void
   request: TimeOffRequest | null
   categoryMap: Map<string, { name: string; emoji?: string | null }>
+  canSeeComment?: boolean
 }
 
 function InfoRow({ label, children }: { label: string; children: React.ReactNode }) {
@@ -43,6 +44,7 @@ export function RequestDetailsModal({
   onOpenChange,
   request,
   categoryMap,
+  canSeeComment,
 }: RequestDetailsModalProps) {
   if (!request) return null
 
@@ -99,28 +101,32 @@ export function RequestDetailsModal({
             <span>{formatDays(days)}</span>
           </InfoRow>
 
-          <Separator />
-
-          <div className="flex flex-col gap-1">
-            <span className="text-sm font-medium leading-5 tracking-[-0.28px] text-muted-foreground">
-              Comment
-            </span>
-            <p className="text-sm font-medium leading-5 tracking-[-0.28px] text-foreground">
-              {request.comment || "–"}
-            </p>
-          </div>
-
-          {request.status === "rejected" && (
+          {canSeeComment !== false && (
             <>
               <Separator />
+
               <div className="flex flex-col gap-1">
                 <span className="text-sm font-medium leading-5 tracking-[-0.28px] text-muted-foreground">
-                  Rejection reason
+                  Comment
                 </span>
                 <p className="text-sm font-medium leading-5 tracking-[-0.28px] text-foreground">
-                  {request.rejection_reason || "–"}
+                  {request.comment || "–"}
                 </p>
               </div>
+
+              {request.status === "rejected" && (
+                <>
+                  <Separator />
+                  <div className="flex flex-col gap-1">
+                    <span className="text-sm font-medium leading-5 tracking-[-0.28px] text-muted-foreground">
+                      Rejection reason
+                    </span>
+                    <p className="text-sm font-medium leading-5 tracking-[-0.28px] text-foreground">
+                      {request.rejection_reason || "–"}
+                    </p>
+                  </div>
+                </>
+              )}
             </>
           )}
         </div>
