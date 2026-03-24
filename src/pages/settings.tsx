@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo, useRef, useCallback } from "react"
+import { useNavigate } from "react-router-dom"
 import { Settings, Plus, Trash2, CloudUpload, User } from "lucide-react"
 import { useQueryClient } from "@tanstack/react-query"
 
@@ -12,12 +13,23 @@ import { Field } from "@/components/ui/field"
 import { Separator } from "@/components/ui/separator"
 import { Avatar } from "@/components/ui/avatar"
 import { BreadcrumbItem } from "@/components/ui/breadcrumb-item"
+import {
+  AlertDialog,
+  AlertDialogTrigger,
+  AlertDialogContent,
+  AlertDialogHeader,
+  AlertDialogFooter,
+  AlertDialogTitle,
+  AlertDialogDescription,
+  AlertDialogCancel,
+} from "@/components/ui/alert-dialog"
 import { useDepartments } from "@/hooks/use-departments"
 import {
   fetchDepartments,
   createDepartment,
   updateDepartment,
   deleteDepartment,
+  deleteWorkspace,
   updateWorkspace,
   updateProfile,
   uploadImage,
@@ -44,9 +56,10 @@ interface InitialValues {
 }
 
 export function SettingsPage() {
-  const { workspace, profile, user, refreshWorkspace, refreshProfile } = useAuth()
+  const { workspace, profile, user, refreshWorkspace, refreshProfile, signOut } = useAuth()
   const { registerGuard, unregisterGuard } = useNavigationGuard()
   const queryClient = useQueryClient()
+  const navigate = useNavigate()
   const { data: cachedDepartments } = useDepartments()
 
   const [workspaceName, setWorkspaceName] = useState("")
@@ -64,6 +77,11 @@ export function SettingsPage() {
   const [deletedDepartmentIds, setDeletedDepartmentIds] = useState<string[]>([])
   const [saving, setSaving] = useState(false)
   const [initialValues, setInitialValues] = useState<InitialValues | null>(null)
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
+  const [deleteConfirmation, setDeleteConfirmation] = useState("")
+  const [deleting, setDeleting] = useState(false)
+
+  const isOwner = workspace?.owner_id === user?.id
 
   const logoInputRef = useRef<HTMLInputElement>(null)
   const avatarInputRef = useRef<HTMLInputElement>(null)
@@ -242,6 +260,25 @@ export function SettingsPage() {
     setAvatarRemoved(false)
     setDepartments(initialValues.departments)
     setDeletedDepartmentIds([])
+  }
+
+  async function handleDeleteWorkspace() {
+    if (!workspace || deleteConfirmation !== workspace.name) return
+    setDeleting(true)
+    try {
+      await deleteWorkspace(workspace.id, deleteConfirmation)
+      queryClient.clear()
+      unregisterGuard()
+      await signOut()
+      navigate("/login", { replace: true })
+    } catch (err) {
+      console.error("Failed to delete workspace:", err)
+      addToast({
+        title: "Failed to delete workspace",
+        description: err instanceof Error ? err.message : "Please try again",
+      })
+      setDeleting(false)
+    }
   }
 
   async function handleSave() {
@@ -548,6 +585,75 @@ export function SettingsPage() {
             )}
           </section>
 
+          {/* Danger Zone — owner only */}
+          {isOwner && (
+            <>
+              <Separator />
+
+              <section className="flex flex-col gap-4">
+                <h2 className="text-base font-semibold leading-6 text-error">
+                  Danger Zone
+                </h2>
+                <div className="flex items-center justify-between rounded-lg border border-error/30 p-4">
+                  <div className="flex flex-col gap-1">
+                    <p className="text-sm font-medium leading-5 text-foreground">
+                      Delete this workspace
+                    </p>
+                    <p className="text-sm leading-5 text-muted-foreground">
+                      Permanently delete this workspace and all its data. This action cannot be undone.
+                    </p>
+                  </div>
+                  <AlertDialog
+                    open={deleteDialogOpen}
+                    onOpenChange={(open) => {
+                      setDeleteDialogOpen(open)
+                      if (!open) setDeleteConfirmation("")
+                    }}
+                  >
+                    <AlertDialogTrigger asChild>
+                      <Button variant="destructive" size="sm" className="shrink-0 ml-4">
+                        Delete workspace
+                      </Button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                      <AlertDialogHeader>
+                        <AlertDialogTitle>Delete workspace</AlertDialogTitle>
+                        <AlertDialogDescription>
+                          This will permanently delete the workspace &ldquo;{workspace?.name}&rdquo;,
+                          all employees, time-off requests, categories, and settings.
+                          All team members will be signed out and removed.
+                          This action cannot be undone.
+                        </AlertDialogDescription>
+                      </AlertDialogHeader>
+                      <div className="flex flex-col gap-2">
+                        <label className="text-sm font-medium leading-5 text-foreground">
+                          Type <span className="font-semibold">{workspace?.name}</span> to confirm
+                        </label>
+                        <Input
+                          value={deleteConfirmation}
+                          onChange={(e) => setDeleteConfirmation(e.target.value)}
+                          placeholder={workspace?.name}
+                          autoComplete="off"
+                        />
+                      </div>
+                      <AlertDialogFooter>
+                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                        <Button
+                          variant="destructive"
+                          onClick={handleDeleteWorkspace}
+                          disabled={deleteConfirmation !== workspace?.name}
+                          loading={deleting}
+                          loadingText="Deleting..."
+                        >
+                          Delete workspace
+                        </Button>
+                      </AlertDialogFooter>
+                    </AlertDialogContent>
+                  </AlertDialog>
+                </div>
+              </section>
+            </>
+          )}
 
           {/* Actions */}
           <div className="flex items-center justify-between">

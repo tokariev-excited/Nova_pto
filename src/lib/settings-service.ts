@@ -94,6 +94,19 @@ export async function uploadImage(
   return data.publicUrl
 }
 
+export async function deleteWorkspace(
+  workspaceId: string,
+  confirmationName: string
+) {
+  const { data, error } = await supabase.functions.invoke("delete-workspace", {
+    body: { workspace_id: workspaceId, confirmation_name: confirmationName },
+  })
+
+  if (error) throw error
+  if (data?.error) throw new Error(data.error)
+  return data
+}
+
 export async function removeImage(bucket: string, publicUrl: string) {
   const marker = `/storage/v1/object/public/${bucket}/`
   const idx = publicUrl.indexOf(marker)

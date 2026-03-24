@@ -93,12 +93,22 @@ export async function rejectTimeOffRequest(requestId: string, rejectionReason: s
 
   if (error) throw error
 
+  // Fire-and-forget: email notification
   supabase.functions
     .invoke("send-time-off-notification", {
       body: { request_id: requestId, action: "rejected" },
     })
     .catch((err) => {
-      console.warn("[rejectTimeOffRequest] Notification failed (non-fatal):", err)
+      console.warn("[rejectTimeOffRequest] Email notification failed (non-fatal):", err)
+    })
+
+  // Fire-and-forget: Slack notification
+  supabase.functions
+    .invoke("slack-notify", {
+      body: { request_id: requestId, action: "rejected" },
+    })
+    .catch((err) => {
+      console.warn("[rejectTimeOffRequest] Slack notification failed (non-fatal):", err)
     })
 
   return data as TimeOffRequest
@@ -111,12 +121,22 @@ export async function approveTimeOffRequest(requestId: string) {
 
   if (error) throw error
 
+  // Fire-and-forget: email notification
   supabase.functions
     .invoke("send-time-off-notification", {
       body: { request_id: requestId, action: "approved" },
     })
     .catch((err) => {
-      console.warn("[approveTimeOffRequest] Notification failed (non-fatal):", err)
+      console.warn("[approveTimeOffRequest] Email notification failed (non-fatal):", err)
+    })
+
+  // Fire-and-forget: Slack notification
+  supabase.functions
+    .invoke("slack-notify", {
+      body: { request_id: requestId, action: "approved" },
+    })
+    .catch((err) => {
+      console.warn("[approveTimeOffRequest] Slack notification failed (non-fatal):", err)
     })
 
   return data
@@ -194,6 +214,21 @@ export async function submitTimeOffRequest(params: SubmitTimeOffRequestParams) {
     .single()
 
   if (error) throw error
+
+  // Fire-and-forget: Slack notification (admin DMs + employee DM with Withdraw)
+  supabase.functions
+    .invoke("slack-notify", {
+      body: {
+        action: "submitted",
+        request_id: data.id,
+        workspace_id: params.workspace_id,
+        employee_profile_id: params.profile_id,
+      },
+    })
+    .catch((err) => {
+      console.warn("[submitTimeOffRequest] Slack notification failed (non-fatal):", err)
+    })
+
   return data as TimeOffRequest
 }
 

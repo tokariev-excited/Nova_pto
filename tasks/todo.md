@@ -1,33 +1,62 @@
-# Code Review Fixes
+# Slack Integration — Calamari-Grade UX Overhaul
 
-## HIGH PRIORITY
-- [x] 1. `new_hire_rule` — migration + type + service + page wiring
-- [x] 2. Auth context — error handling for founder flow
-- [x] 3. Auth context — useMemo/useCallback for value to prevent cascading re-renders
-- [x] 4. Error boundary component at dashboard level
-- [x] 5. `fetchEmployeeCounts` — parallelize with Promise.all
+## Already Implemented (v2)
+- [x] Home Tab with all 6 sections (greeting, balances, out today, pending w/ withdraw, decisions, admin panel)
+- [x] buildApprovalMessage with balance context + overlap info
+- [x] buildApprovedMessage / buildRejectedMessage for in-place updates
+- [x] handleWithdrawRequest (home + DM)
+- [x] refreshHomeTab utility
+- [x] Auto-refresh after Slack-originated approve/reject/withdraw/submit
+- [x] Inline admin approvals from Home Tab
+- [x] Employee submission DM with Withdraw button (Slack-originated)
+- [x] Employee approval/rejection DMs with balance info (Slack-originated)
 
-## MEDIUM PRIORITY
-- [x] 7. CategoryForm — reduce watch() subscriptions (useWatch)
-- [x] 8. SortableCategoryRow — wrap in React.memo
-- [x] 9. select('*') → specific columns (fetchEmployeeCounts: select("id") instead of select("*"))
-- [x] 10. Image validation — single utility (validateImageFile in utils.ts)
-- [x] 11. updateCategorySortOrder — Promise.all for atomicity
-- [x] 13. Employee mutations — targeted invalidation
-- [x] 17. Constants file (src/lib/constants.ts)
+## Overhaul Work (completed)
+- [x] **BUG FIX**: `formatDate(req.createdAt)` — extract date from timestamp with `.substring(0, 10)`
+- [x] **BUG FIX**: `handleApproveRequest` chat.update guard for Home Tab approvals (skip when no messageTs/channelId)
+- [x] **FEATURE**: Internal refresh endpoint in slack-events (`internal_refresh_home_tab`, auth via service role key)
+- [x] **FEATURE**: slack-notify sends employee DM with Withdraw on web submission (skip_employee_dm flag)
+- [x] **FEATURE**: slack-notify triggers Home Tab refresh after all notification actions (submitted/approved/rejected)
+- [x] **FEATURE**: Wire `submitTimeOffRequest` to call slack-notify (web → Slack admin notifications)
+- [x] **FEATURE**: Pass skip_employee_dm flag from slack-events to avoid duplicate DMs
+- [x] Build passes
 
-## LOW PRIORITY
-- [x] 15. useCallback for handlers in Sidebar, TimeOffSetup
-- [x] 16. Per-route Suspense boundaries in DashboardLayout
-- [x] 19. keepPreviousData on employee list queries
+## Multi-Admin DM Update Fix
+- [x] New migration `slack_dm_messages` table — stores per-admin DM refs (channel_id + message_ts)
+- [x] slack-notify: store all admin DM refs on send (upsert into slack_dm_messages)
+- [x] slack-notify: update all admin DMs on web dashboard approve/reject
+- [x] slack-events: add `updateAllAdminDMs` helper with exclude support
+- [x] slack-events: wire into `handleApproveRequest` (updates other admins' DMs)
+- [x] slack-events: wire into `handleRejectSubmission` (updates other admins' DMs)
+- [x] slack-events: wire into `handleWithdrawRequest` (updates all admin DMs)
 
-## SKIPPED (too risky / too marginal for this PR)
-- 6. EmployeeForm → react-hook-form (large migration, separate PR)
-- 12. Settings page reduce useState (partially helped by other fixes)
-- 14. NavigationGuard scope (architectural decision, separate PR)
-- 18. FormPageHeader extraction (marginal benefit for 4 pages)
-- 20. Stub pages (informational only)
+## Deployment
+- [ ] Apply migration: `supabase db push`
+- [ ] Deploy slack-events: `supabase functions deploy slack-events`
+- [ ] Deploy slack-notify: `supabase functions deploy slack-notify`
 
-## Verification
-- [x] `npm run build` — passes (zero errors)
-- [x] `npm run lint` — passes clean
+---
+
+# Danger Zone + Single Workspace Constraint
+
+## Database
+- [x] Migration: partial unique index `profiles_email_active_unique` (one active email globally)
+- [x] Migration: RLS DELETE policy on workspaces (owner-only)
+
+## Edge Functions
+- [x] New `delete-workspace` Edge Function (owner auth, confirmation, deletes auth users + profiles + workspace)
+- [x] Modified `invite-employee`: global email check (409 if active elsewhere)
+- [x] Modified `invite-employee`: handle re-invite of existing auth users (reuse ID)
+
+## Service Layer
+- [x] `deleteWorkspace()` in settings-service.ts
+
+## UI
+- [x] Danger Zone section on Settings page (owner-only visibility)
+- [x] AlertDialog confirmation modal (type workspace name to confirm)
+- [x] Post-delete: clear cache, unregister guard, sign out, redirect to login
+
+## Deployment
+- [ ] Apply migration: `supabase db push`
+- [ ] Deploy delete-workspace: `supabase functions deploy delete-workspace`
+- [ ] Deploy invite-employee: `supabase functions deploy invite-employee`

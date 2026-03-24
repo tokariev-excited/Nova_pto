@@ -43,7 +43,12 @@
       "mcp__supabase__apply_migration",
       "Bash(supabase migration:*)",
       "Bash(npm list:*)",
-      "Bash(find /Users/yaroslavtokariev/Desktop/Excited/Figma-To-Code-Projects/Nova_pto/supabase -type f -name *.toml -o -name *.ts -o -name *.sql)"
+      "Bash(find /Users/yaroslavtokariev/Desktop/Excited/Figma-To-Code-Projects/Nova_pto/supabase -type f -name *.toml -o -name *.ts -o -name *.sql)",
+      "Bash(supabase:*)",
+      "mcp__supabase__execute_sql",
+      "mcp__supabase__get_logs",
+      "mcp__supabase__get_publishable_keys",
+      "Bash(./node_modules/.bin/tsc --noEmit)"
     ]
   },
   "enableAllProjectMcpServers": true,

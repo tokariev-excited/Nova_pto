@@ -79,22 +79,53 @@ Deno.serve(async (req) => {
     // Create admin client with service role key
     const adminClient = createClient(supabaseUrl, supabaseServiceKey)
 
-    // Invite the user via email (creates auth user + sends invite)
+    // Check if email is already active in any workspace (single-workspace constraint)
+    const { data: existingProfile } = await adminClient
+      .from("profiles")
+      .select("id, workspace_id")
+      .eq("email", email)
+      .neq("status", "deleted")
+      .maybeSingle()
+
+    if (existingProfile) {
+      const message =
+        existingProfile.workspace_id === callerProfile.workspace_id
+          ? "This email is already part of this workspace"
+          : "This email is already part of another workspace"
+      return new Response(
+        JSON.stringify({ error: message }),
+        { status: 409, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      )
+    }
+
+    // Try to invite the user via email (creates auth user + sends invite)
     const inviteOptions: Record<string, string> = {}
     if (redirect_url) {
       inviteOptions.redirectTo = redirect_url
     }
+
+    let newUserId: string
+
     const { data: inviteData, error: inviteError } =
       await adminClient.auth.admin.inviteUserByEmail(email, inviteOptions)
 
     if (inviteError) {
-      return new Response(
-        JSON.stringify({ error: inviteError.message }),
-        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      )
-    }
+      // Auth user may already exist (e.g., previously deleted from another workspace)
+      // Try to reuse their existing auth identity
+      const { data: existingUser } = await adminClient.auth.admin
+        .getUserByEmail(email)
 
-    const newUserId = inviteData.user.id
+      if (existingUser?.user) {
+        newUserId = existingUser.user.id
+      } else {
+        return new Response(
+          JSON.stringify({ error: inviteError.message }),
+          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        )
+      }
+    } else {
+      newUserId = inviteData.user.id
+    }
 
     // Insert profile row
     const { data: profile, error: insertError } = await adminClient
