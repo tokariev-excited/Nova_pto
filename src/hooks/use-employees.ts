@@ -38,10 +38,12 @@ export function useEmployeeCounts() {
 }
 
 export function useEmployee(id: string | undefined) {
+  const { workspace } = useAuth()
+
   return useQuery({
-    queryKey: employeeKeys.detail(id ?? ""),
-    queryFn: () => fetchEmployee(id!),
-    enabled: !!id,
+    queryKey: employeeKeys.detail(workspace?.id ?? "", id ?? ""),
+    queryFn: () => fetchEmployee(id!, workspace!.id),
+    enabled: !!id && !!workspace,
   })
 }
 
@@ -51,7 +53,7 @@ export function useEmployeeStatusMutation() {
 
   return useMutation({
     mutationFn: ({ employeeId, status }: { employeeId: string; status: EmployeeStatus }) =>
-      updateEmployeeStatus(employeeId, status),
+      updateEmployeeStatus(employeeId, status, workspace!.id),
     onSuccess: () => {
       if (workspace) {
         // Invalidate counts and all employee lists at once with a single prefix match
@@ -68,7 +70,7 @@ export function useDeleteEmployeeMutation() {
   const { workspace } = useAuth()
 
   return useMutation({
-    mutationFn: (employeeId: string) => updateEmployeeStatus(employeeId, "deleted"),
+    mutationFn: (employeeId: string) => updateEmployeeStatus(employeeId, "deleted", workspace!.id),
     onSuccess: () => {
       if (workspace) {
         // Single prefix-based invalidation instead of 4 separate calls
@@ -86,7 +88,7 @@ export function useBulkEmployeeStatusMutation() {
 
   return useMutation({
     mutationFn: ({ ids, status }: { ids: string[]; status: EmployeeStatus }) =>
-      bulkUpdateEmployeeStatus(ids, status),
+      bulkUpdateEmployeeStatus(ids, status, workspace!.id),
     onSuccess: () => {
       if (workspace) {
         queryClient.invalidateQueries({ queryKey: employeeKeys.all(workspace.id) })
@@ -102,12 +104,12 @@ export function useUpdateEmployeeMutation() {
 
   return useMutation({
     mutationFn: ({ employeeId, data }: { employeeId: string; data: UpdateEmployeeData }) =>
-      updateEmployee(employeeId, data),
+      updateEmployee(employeeId, data, workspace!.id),
     onSuccess: (_data, variables) => {
       if (workspace) {
         queryClient.invalidateQueries({ queryKey: employeeKeys.all(workspace.id) })
+        queryClient.invalidateQueries({ queryKey: employeeKeys.detail(workspace.id, variables.employeeId) })
       }
-      queryClient.invalidateQueries({ queryKey: employeeKeys.detail(variables.employeeId) })
     },
   })
 }

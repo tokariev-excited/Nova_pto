@@ -3,12 +3,14 @@ import type { EmployeeStatus } from "@/types/employee"
 
 export async function updateEmployeeStatus(
   employeeId: string,
-  status: EmployeeStatus
+  status: EmployeeStatus,
+  workspaceId: string
 ) {
   const { data, error } = await supabase
     .from("profiles")
     .update({ status })
     .eq("id", employeeId)
+    .eq("workspace_id", workspaceId)
     .select()
     .single()
 
@@ -18,12 +20,14 @@ export async function updateEmployeeStatus(
 
 export async function bulkUpdateEmployeeStatus(
   ids: string[],
-  status: EmployeeStatus
+  status: EmployeeStatus,
+  workspaceId: string
 ) {
   const { error } = await supabase
     .from("profiles")
     .update({ status })
     .in("id", ids)
+    .eq("workspace_id", workspaceId)
 
   if (error) throw error
 }
@@ -39,7 +43,7 @@ export async function fetchEmployees(
 
   const { data, error, count } = await supabase
     .from("profiles")
-    .select("*", { count: "exact" })
+    .select("id, first_name, last_name, email, avatar_url, status, department_id, role, location, hire_date, created_at", { count: "exact" })
     .eq("workspace_id", workspaceId)
     .eq("status", status)
     .order("created_at", { ascending: false })
@@ -72,11 +76,12 @@ export async function inviteEmployee(data: InviteEmployeeData) {
   return result.profile
 }
 
-export async function fetchEmployee(employeeId: string) {
+export async function fetchEmployee(employeeId: string, workspaceId: string) {
   const { data, error } = await supabase
     .from("profiles")
     .select("*")
     .eq("id", employeeId)
+    .eq("workspace_id", workspaceId)
     .single()
 
   if (error) throw error
@@ -95,12 +100,14 @@ export interface UpdateEmployeeData {
 
 export async function updateEmployee(
   employeeId: string,
-  data: UpdateEmployeeData
+  data: UpdateEmployeeData,
+  workspaceId: string
 ) {
   const { data: result, error } = await supabase
     .from("profiles")
     .update(data)
     .eq("id", employeeId)
+    .eq("workspace_id", workspaceId)
     .select()
     .single()
 

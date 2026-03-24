@@ -195,6 +195,9 @@ export function ImportHolidayModal({ open, onOpenChange }: ImportHolidayModalPro
           })
           onOpenChange(false)
         },
+        onError: () => {
+          addToast({ variant: "error", title: "Failed to import holidays", description: "Something went wrong. Please try again." })
+        },
       }
     )
   }, [workspace, selectedIndices, fetchedHolidays, countryCode, year, countryName, importMutation, onOpenChange])

@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect, useCallback, startTransition } from "react"
+import { useState, useMemo, useEffect, useCallback, memo, startTransition } from "react"
 import { useNavigate } from "react-router-dom"
 import {
   Users,
@@ -67,6 +67,193 @@ function formatDate(dateStr?: string) {
   }).format(new Date(dateStr))
 }
 
+interface EmployeeRowProps {
+  emp: Profile
+  isLast: boolean
+  isSelected: boolean
+  departmentName: string
+  debouncedSearch: string
+  onToggleSelect: (id: string, checked: boolean) => void
+  onNavigateToEdit: (id: string) => void
+  onDeactivate: (emp: Profile) => void
+  onActivate: (emp: Profile) => void
+  onDelete: (emp: Profile) => void
+}
+
+const EmployeeRow = memo(function EmployeeRow({
+  emp,
+  isLast,
+  isSelected,
+  departmentName,
+  debouncedSearch,
+  onToggleSelect,
+  onNavigateToEdit,
+  onDeactivate,
+  onActivate,
+  onDelete,
+}: EmployeeRowProps) {
+  const [popoverOpen, setPopoverOpen] = useState(false)
+
+  return (
+    <div
+      className={`flex hover:bg-muted/50${emp.status === "active" ? " cursor-pointer" : ""}`}
+      onClick={() => {
+        if (emp.status === "active") onNavigateToEdit(emp.id)
+      }}
+    >
+      <div onClick={(e) => e.stopPropagation()}>
+        <DataTableCell
+          type="checkbox"
+          size="md"
+          className="w-10 pl-2"
+          checked={isSelected}
+          onCheckedChange={(checked) => onToggleSelect(emp.id, !!checked)}
+          border={!isLast}
+        />
+      </div>
+      <DataTableCell
+        type="avatar"
+        size="md"
+        className="flex-1"
+        avatarSrc={emp.avatar_url ?? undefined}
+        avatarAlt={getDisplayName(emp.first_name, emp.last_name) || emp.email}
+        avatarFallback={getInitials(emp.first_name, emp.last_name)}
+        label={getDisplayName(emp.first_name, emp.last_name) || "—"}
+        highlightQuery={debouncedSearch}
+        border={!isLast}
+      />
+      <DataTableCell
+        type="text"
+        size="md"
+        className="w-[260px]"
+        label={emp.email}
+        highlightQuery={debouncedSearch}
+        border={!isLast}
+      />
+      <DataTableCell
+        type="text"
+        size="md"
+        className="w-[180px]"
+        labelClassName="font-medium"
+        label={departmentName}
+        border={!isLast}
+      />
+      <DataTableCell
+        type="badge"
+        size="md"
+        className="w-[100px]"
+        badgeNode={
+          <Badge variant="secondary">
+            {emp.role === "admin" ? "Admin" : "User"}
+          </Badge>
+        }
+        border={!isLast}
+      />
+      <DataTableCell
+        type="text"
+        size="md"
+        className="w-[160px]"
+        label={emp.location ?? "—"}
+        border={!isLast}
+      />
+      <DataTableCell
+        type="text"
+        size="md"
+        className="w-[120px]"
+        label={formatDate(emp.hire_date)}
+        border={!isLast}
+      />
+      <div
+        className="relative flex items-center justify-center w-[56px] h-[72px] px-3 py-2"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <Popover open={popoverOpen} onOpenChange={setPopoverOpen}>
+          <PopoverTrigger asChild>
+            <Button variant="ghost" size="icon-sm">
+              <EllipsisIcon className="size-4" />
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent align="end" className="p-0 border-0 shadow-none">
+            <ComboboxMenu
+              groups={
+                emp.status === "active"
+                  ? [
+                      {
+                        items: [
+                          {
+                            type: "icon",
+                            icon: <PencilLine className="size-4" />,
+                            label: "Edit details",
+                            onClick: () => {
+                              setPopoverOpen(false)
+                              onNavigateToEdit(emp.id)
+                            },
+                          },
+                          {
+                            type: "icon",
+                            icon: <UserMinus className="size-4" />,
+                            label: "Deactivate",
+                            onClick: () => {
+                              setPopoverOpen(false)
+                              onDeactivate(emp)
+                            },
+                          },
+                        ],
+                      },
+                      {
+                        items: [
+                          {
+                            type: "icon",
+                            variant: "destructive",
+                            icon: <Trash2 className="size-4" />,
+                            label: "Delete employee",
+                            onClick: () => {
+                              setPopoverOpen(false)
+                              onDelete(emp)
+                            },
+                          },
+                        ],
+                      },
+                    ]
+                  : [
+                      {
+                        items: [
+                          {
+                            type: "icon",
+                            icon: <UserCheck className="size-4" />,
+                            label: "Activate",
+                            onClick: () => {
+                              setPopoverOpen(false)
+                              onActivate(emp)
+                            },
+                          },
+                        ],
+                      },
+                      {
+                        items: [
+                          {
+                            type: "icon",
+                            variant: "destructive",
+                            icon: <Trash2 className="size-4" />,
+                            label: "Delete employee",
+                            onClick: () => {
+                              setPopoverOpen(false)
+                              onDelete(emp)
+                            },
+                          },
+                        ],
+                      },
+                    ]
+              }
+            />
+          </PopoverContent>
+        </Popover>
+        {!isLast && <div className="absolute bottom-0 left-0 right-0 border-b border-border" />}
+      </div>
+    </div>
+  )
+})
+
 export function EmployeesPage() {
   const navigate = useNavigate()
   const { profile: currentProfile, workspace } = useAuth()
@@ -77,9 +264,6 @@ export function EmployeesPage() {
 
   const [pageSize, setPageSize] = useState(10)
   const [currentPage, setCurrentPage] = useState(1)
-
-  // Dropdown state
-  const [openPopoverId, setOpenPopoverId] = useState<string | null>(null)
 
   // Delete dialog state
   const [deleteTarget, setDeleteTarget] = useState<Profile | null>(null)
@@ -161,6 +345,18 @@ export function EmployeesPage() {
     },
     { value: "deleted", label: "Deleted", badge: adjustedCounts.deleted || undefined },
   ]
+
+  const handleToggleSelect = useCallback((id: string, checked: boolean) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev)
+      checked ? next.add(id) : next.delete(id)
+      return next
+    })
+  }, [])
+
+  const handleNavigateToEdit = useCallback((id: string) => {
+    navigate(`/employees/${id}/edit`)
+  }, [navigate])
 
   const handleAddEmployee = useCallback(() => {
     navigate("/employees/new")
@@ -361,7 +557,7 @@ export function EmployeesPage() {
           {/* Body */}
           {loading && filteredEmployees.length === 0 ? (
             <div className="flex items-center justify-center py-16">
-              <p className="text-sm text-muted-foreground">Loading…</p>
+              <div className="size-5 animate-spin rounded-full border-2 border-muted-foreground border-t-foreground" />
             </div>
           ) : isError && filteredEmployees.length === 0 ? (
             <div className="flex items-center justify-center py-16">
@@ -416,208 +612,21 @@ export function EmployeesPage() {
             </div>
           ) : (
             <div>
-              {paginatedEmployees.map((emp, index) => {
-                const isLast = index === paginatedEmployees.length - 1
-                return (
-                <div
+              {paginatedEmployees.map((emp, index) => (
+                <EmployeeRow
                   key={emp.id}
-                  className={`flex hover:bg-muted/50${emp.status === "active" ? " cursor-pointer" : ""}`}
-                  onClick={() => {
-                    if (emp.status === "active") {
-                      navigate(`/employees/${emp.id}/edit`)
-                    }
-                  }}
-                >
-                  <div onClick={(e) => e.stopPropagation()}>
-                    <DataTableCell
-                      type="checkbox"
-                      size="md"
-                      className="w-10 pl-2"
-                      checked={selectedIds.has(emp.id)}
-                      onCheckedChange={(checked) => {
-                        setSelectedIds((prev) => {
-                          const next = new Set(prev)
-                          checked ? next.add(emp.id) : next.delete(emp.id)
-                          return next
-                        })
-                      }}
-                      border={!isLast}
-                    />
-                  </div>
-                  <DataTableCell
-                    type="avatar"
-                    size="md"
-                    className="flex-1"
-                    avatarSrc={emp.avatar_url ?? undefined}
-                    avatarAlt={
-                      getDisplayName(emp.first_name, emp.last_name) ||
-                      emp.email
-                    }
-                    avatarFallback={getInitials(
-                      emp.first_name,
-                      emp.last_name
-                    )}
-                    label={
-                      getDisplayName(emp.first_name, emp.last_name) || "—"
-                    }
-                    highlightQuery={debouncedSearch}
-                    border={!isLast}
-                  />
-                  <DataTableCell
-                    type="text"
-                    size="md"
-                    className="w-[260px]"
-                    label={emp.email}
-                    highlightQuery={debouncedSearch}
-                    border={!isLast}
-                  />
-                  <DataTableCell
-                    type="text"
-                    size="md"
-                    className="w-[180px]"
-                    labelClassName="font-medium"
-                    label={
-                      emp.department_id
-                        ? departmentMap.get(emp.department_id) ?? "—"
-                        : "—"
-                    }
-                    border={!isLast}
-                  />
-                  <DataTableCell
-                    type="badge"
-                    size="md"
-                    className="w-[100px]"
-                    badgeNode={
-                      <Badge variant="secondary">
-                        {emp.role === "admin" ? "Admin" : "User"}
-                      </Badge>
-                    }
-                    border={!isLast}
-                  />
-                  <DataTableCell
-                    type="text"
-                    size="md"
-                    className="w-[160px]"
-                    label={emp.location ?? "—"}
-                    border={!isLast}
-                  />
-                  <DataTableCell
-                    type="text"
-                    size="md"
-                    className="w-[120px]"
-                    label={formatDate(emp.hire_date)}
-                    border={!isLast}
-                  />
-                  <div
-                    className="relative flex items-center justify-center w-[56px] h-[72px] px-3 py-2"
-                    onClick={(e) => e.stopPropagation()}
-                  >
-                    <Popover
-                      open={openPopoverId === emp.id}
-                      onOpenChange={(open) =>
-                        setOpenPopoverId(open ? emp.id : null)
-                      }
-                    >
-                      <PopoverTrigger asChild>
-                        <Button variant="ghost" size="icon-sm">
-                          <EllipsisIcon className="size-4" />
-                        </Button>
-                      </PopoverTrigger>
-                      <PopoverContent
-                        align="end"
-                        className="p-0 border-0 shadow-none"
-                      >
-                        <ComboboxMenu
-                          groups={
-                            emp.status === "active"
-                              ? [
-                                  {
-                                    items: [
-                                      {
-                                        type: "icon",
-                                        icon: (
-                                          <PencilLine className="size-4" />
-                                        ),
-                                        label: "Edit details",
-                                        onClick: () => {
-                                          setOpenPopoverId(null)
-                                          navigate(
-                                            `/employees/${emp.id}/edit`
-                                          )
-                                        },
-                                      },
-                                      {
-                                        type: "icon",
-                                        icon: (
-                                          <UserMinus className="size-4" />
-                                        ),
-                                        label: "Deactivate",
-                                        onClick: () => {
-                                          setOpenPopoverId(null)
-                                          handleDeactivate(emp)
-                                        },
-                                      },
-                                    ],
-                                  },
-                                  {
-                                    items: [
-                                      {
-                                        type: "icon",
-                                        variant: "destructive",
-                                        icon: (
-                                          <Trash2 className="size-4" />
-                                        ),
-                                        label: "Delete employee",
-                                        onClick: () => {
-                                          setOpenPopoverId(null)
-                                          setDeleteTarget(emp)
-                                        },
-                                      },
-                                    ],
-                                  },
-                                ]
-                              : [
-                                  {
-                                    items: [
-                                      {
-                                        type: "icon",
-                                        icon: (
-                                          <UserCheck className="size-4" />
-                                        ),
-                                        label: "Activate",
-                                        onClick: () => {
-                                          setOpenPopoverId(null)
-                                          handleActivate(emp)
-                                        },
-                                      },
-                                    ],
-                                  },
-                                  {
-                                    items: [
-                                      {
-                                        type: "icon",
-                                        variant: "destructive",
-                                        icon: (
-                                          <Trash2 className="size-4" />
-                                        ),
-                                        label: "Delete employee",
-                                        onClick: () => {
-                                          setOpenPopoverId(null)
-                                          setDeleteTarget(emp)
-                                        },
-                                      },
-                                    ],
-                                  },
-                                ]
-                          }
-                        />
-                      </PopoverContent>
-                    </Popover>
-                    {!isLast && <div className="absolute bottom-0 left-0 right-0 border-b border-border" />}
-                  </div>
-                </div>
-                )
-              })}
+                  emp={emp}
+                  isLast={index === paginatedEmployees.length - 1}
+                  isSelected={selectedIds.has(emp.id)}
+                  departmentName={emp.department_id ? departmentMap.get(emp.department_id) ?? "—" : "—"}
+                  debouncedSearch={debouncedSearch}
+                  onToggleSelect={handleToggleSelect}
+                  onNavigateToEdit={handleNavigateToEdit}
+                  onDeactivate={handleDeactivate}
+                  onActivate={handleActivate}
+                  onDelete={setDeleteTarget}
+                />
+              ))}
             </div>
           )}
         </div>

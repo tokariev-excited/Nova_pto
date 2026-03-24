@@ -325,7 +325,7 @@ export function SettingsPage() {
 
       // 5. Handle departments
       for (const id of deletedDepartmentIds) {
-        await deleteDepartment(id)
+        await deleteDepartment(id, workspace.id)
       }
       for (const dept of departments) {
         if (dept.isNew) {
@@ -335,7 +335,7 @@ export function SettingsPage() {
         } else {
           const original = initialValues?.departments.find((od) => od.id === dept.id)
           if (original && original.name !== dept.name && dept.name.trim()) {
-            await updateDepartment(dept.id, dept.name.trim())
+            await updateDepartment(dept.id, dept.name.trim(), workspace.id)
           }
         }
       }

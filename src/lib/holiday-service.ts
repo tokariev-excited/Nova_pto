@@ -36,7 +36,7 @@ export async function fetchPublicHolidays(
 export async function fetchHolidays(workspaceId: string): Promise<Holiday[]> {
   const { data, error } = await supabase
     .from("holidays")
-    .select("*")
+    .select("id, workspace_id, name, date, is_custom, country_code, year")
     .eq("workspace_id", workspaceId)
     .order("date", { ascending: true })
 
@@ -64,12 +64,14 @@ export interface UpdateHolidayData {
 
 export async function updateHoliday(
   holidayId: string,
-  data: UpdateHolidayData
+  data: UpdateHolidayData,
+  workspaceId: string
 ): Promise<Holiday> {
   const { data: holiday, error } = await supabase
     .from("holidays")
     .update(data)
     .eq("id", holidayId)
+    .eq("workspace_id", workspaceId)
     .select()
     .single()
 
@@ -77,20 +79,22 @@ export async function updateHoliday(
   return holiday as Holiday
 }
 
-export async function deleteHoliday(holidayId: string): Promise<void> {
+export async function deleteHoliday(holidayId: string, workspaceId: string): Promise<void> {
   const { error } = await supabase
     .from("holidays")
     .delete()
     .eq("id", holidayId)
+    .eq("workspace_id", workspaceId)
 
   if (error) throw error
 }
 
-export async function bulkDeleteHolidays(ids: string[]): Promise<void> {
+export async function bulkDeleteHolidays(ids: string[], workspaceId: string): Promise<void> {
   const { error } = await supabase
     .from("holidays")
     .delete()
     .in("id", ids)
+    .eq("workspace_id", workspaceId)
 
   if (error) throw error
 }

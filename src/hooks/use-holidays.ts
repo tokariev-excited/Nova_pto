@@ -51,7 +51,7 @@ export function useBulkDeleteHolidaysMutation() {
   const { workspace } = useAuth()
 
   return useMutation({
-    mutationFn: (ids: string[]) => bulkDeleteHolidays(ids),
+    mutationFn: (ids: string[]) => bulkDeleteHolidays(ids, workspace!.id),
     onSuccess: () => {
       if (workspace) {
         queryClient.invalidateQueries({ queryKey: holidayKeys.all(workspace.id) })
@@ -80,7 +80,7 @@ export function useUpdateHolidayMutation() {
 
   return useMutation({
     mutationFn: ({ holidayId, data }: { holidayId: string; data: UpdateHolidayData }) =>
-      updateHoliday(holidayId, data),
+      updateHoliday(holidayId, data, workspace!.id),
     onSuccess: () => {
       if (workspace) {
         queryClient.invalidateQueries({ queryKey: holidayKeys.all(workspace.id) })
@@ -94,7 +94,7 @@ export function useDeleteHolidayMutation() {
   const { workspace } = useAuth()
 
   return useMutation({
-    mutationFn: (holidayId: string) => deleteHoliday(holidayId),
+    mutationFn: (holidayId: string) => deleteHoliday(holidayId, workspace!.id),
     onSuccess: () => {
       if (workspace) {
         queryClient.invalidateQueries({ queryKey: holidayKeys.all(workspace.id) })

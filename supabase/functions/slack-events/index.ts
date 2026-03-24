@@ -138,7 +138,7 @@ function buildHomeTabBlocks(params: {
   balances: Array<{ categoryName: string; emoji: string | null; remainingDays: number | null; amountValue: number | null; accrualMethod: string }>
   outToday: Array<{ employeeName: string; categoryName: string; emoji: string | null; endDate: string }>
   upcomingThisWeek: Array<{ employeeName: string; categoryName: string; emoji: string | null; startDate: string; endDate: string }>
-  pendingRequests: Array<{ id: string; categoryName: string; emoji: string | null; startDate: string; endDate: string; totalDays: number; createdAt: string }>
+  pendingRequests: Array<{ id: string; categoryName: string; emoji: string | null; startDate: string; endDate: string; startPeriod: string; endPeriod: string; totalDays: number; createdAt: string }>
   recentDecisions: Array<{ categoryName: string; emoji: string | null; startDate: string; endDate: string; totalDays: number; status: string; rejectionReason?: string | null }>
   isAdmin: boolean
   adminPendingRequests: Array<{ id: string; employeeName: string; categoryName: string; emoji: string | null; startDate: string; endDate: string; totalDays: number; comment: string | null }>
@@ -163,6 +163,12 @@ function buildHomeTabBlocks(params: {
       return { type: "mrkdwn", text: `${icon} *${b.categoryName}*\n${daysText}` }
     })
     blocks.push({ type: "section", fields })
+    if (params.balances.length > 10) {
+      blocks.push({
+        type: "context",
+        elements: [{ type: "mrkdwn", text: `_Showing 10 of ${params.balances.length} categories. Visit the dashboard for all balances._` }],
+      })
+    }
   } else {
     blocks.push({
       type: "section",
@@ -206,18 +212,18 @@ function buildHomeTabBlocks(params: {
   blocks.push({ type: "divider" })
 
   // ── Section 3: Pending Requests with Withdraw ──
-  if (params.pendingRequests.length > 0) {
-    blocks.push({
-      type: "section",
-      text: { type: "mrkdwn", text: `*:hourglass_flowing_sand: Your Pending Requests* (${params.pendingRequests.length})` },
-    })
+  blocks.push({
+    type: "section",
+    text: { type: "mrkdwn", text: `*:hourglass_flowing_sand: Your Pending Requests* (${params.pendingRequests.length})` },
+  })
 
+  if (params.pendingRequests.length > 0) {
     for (const req of params.pendingRequests) {
       const icon = req.emoji || ":calendar:"
       const dateRange =
         req.startDate === req.endDate
-          ? formatDate(req.startDate)
-          : `${formatDate(req.startDate)} \u2013 ${formatDate(req.endDate)}`
+          ? `${formatDate(req.startDate)} \u00b7 ${formatPeriodLabel(req.startPeriod)} \u2013 ${formatPeriodLabel(req.endPeriod)}`
+          : `${formatDate(req.startDate)} (${formatPeriodLabel(req.startPeriod)}) \u2013 ${formatDate(req.endDate)} (${formatPeriodLabel(req.endPeriod)})`
       blocks.push(
         {
           type: "section",
@@ -240,17 +246,22 @@ function buildHomeTabBlocks(params: {
         }
       )
     }
+  } else {
+    blocks.push({
+      type: "context",
+      elements: [{ type: "mrkdwn", text: "No pending requests \u2014 you're all set!" }],
+    })
   }
 
   blocks.push({ type: "divider" })
 
   // ── Section 4: Recent Decisions ──
-  if (params.recentDecisions.length > 0) {
-    blocks.push({
-      type: "section",
-      text: { type: "mrkdwn", text: "*:white_check_mark: Recent Decisions*" },
-    })
+  blocks.push({
+    type: "section",
+    text: { type: "mrkdwn", text: "*:white_check_mark: Recent Decisions*" },
+  })
 
+  if (params.recentDecisions.length > 0) {
     for (const dec of params.recentDecisions.slice(0, 5)) {
       const icon = dec.emoji || ":calendar:"
       const statusEmoji =
@@ -258,8 +269,6 @@ function buildHomeTabBlocks(params: {
           ? ":white_check_mark:"
           : dec.status === "rejected"
           ? ":x:"
-          : dec.status === "withdrawn"
-          ? ":no_entry_sign:"
           : ":grey_question:"
       const statusLabel = dec.status.charAt(0).toUpperCase() + dec.status.slice(1)
       const dateRange =
@@ -272,6 +281,11 @@ function buildHomeTabBlocks(params: {
       }
       blocks.push({ type: "context", elements: [{ type: "mrkdwn", text }] })
     }
+  } else {
+    blocks.push({
+      type: "context",
+      elements: [{ type: "mrkdwn", text: "No recent decisions yet" }],
+    })
   }
 
   blocks.push({ type: "divider" })
@@ -296,54 +310,72 @@ function buildHomeTabBlocks(params: {
   })
 
   // ── Section 6: Admin Panel ──
-  if (params.isAdmin && params.adminPendingRequests.length > 0) {
+  if (params.isAdmin) {
     blocks.push(
       { type: "divider" },
       { type: "header", text: { type: "plain_text", text: "Admin Panel", emoji: true } },
-      {
-        type: "section",
-        text: { type: "mrkdwn", text: `*:hourglass_flowing_sand: ${params.adminPendingRequests.length} requests awaiting your review*` },
-      }
     )
 
-    for (const req of params.adminPendingRequests.slice(0, 5)) {
-      const icon = req.emoji || ":calendar:"
-      const dateRange =
-        req.startDate === req.endDate
-          ? formatDate(req.startDate)
-          : `${formatDate(req.startDate)} \u2013 ${formatDate(req.endDate)}`
-      let text = `:bust_in_silhouette: *${req.employeeName}* \u00b7 ${icon} ${req.categoryName} \u00b7 ${dateRange}\n${formatDays(req.totalDays)}`
-      if (req.comment) {
-        const preview = req.comment.length > 80 ? req.comment.substring(0, 77) + "..." : req.comment
-        text += ` \u00b7 _"${preview}"_`
-      }
-      blocks.push(
-        {
-          type: "section",
-          text: { type: "mrkdwn", text },
-        },
-        {
-          type: "actions",
-          elements: [
-            {
-              type: "button",
-              text: { type: "plain_text", text: "\u2705 Approve", emoji: true },
-              action_id: "approve_request",
-              style: "primary",
-              value: req.id,
-            },
-            {
-              type: "button",
-              text: { type: "plain_text", text: "\u274c Reject", emoji: true },
-              action_id: "reject_request",
-              style: "danger",
-              value: req.id,
-            },
-          ],
+    if (params.adminPendingRequests.length > 0) {
+      blocks.push({
+        type: "section",
+        text: { type: "mrkdwn", text: `*:hourglass_flowing_sand: ${params.adminPendingRequests.length} request${params.adminPendingRequests.length === 1 ? "" : "s"} awaiting your review*` },
+      })
+
+      for (const req of params.adminPendingRequests.slice(0, 5)) {
+        const icon = req.emoji || ":calendar:"
+        const dateRange =
+          req.startDate === req.endDate
+            ? formatDate(req.startDate)
+            : `${formatDate(req.startDate)} \u2013 ${formatDate(req.endDate)}`
+        let text = `:bust_in_silhouette: *${req.employeeName}* \u00b7 ${icon} ${req.categoryName} \u00b7 ${dateRange}\n${formatDays(req.totalDays)}`
+        if (req.comment) {
+          const preview = req.comment.length > 80 ? req.comment.substring(0, 77) + "..." : req.comment
+          text += ` \u00b7 _"${preview}"_`
         }
-      )
+        blocks.push(
+          {
+            type: "section",
+            text: { type: "mrkdwn", text },
+          },
+          {
+            type: "actions",
+            elements: [
+              {
+                type: "button",
+                text: { type: "plain_text", text: "\u2705 Approve", emoji: true },
+                action_id: "approve_request",
+                style: "primary",
+                value: req.id,
+              },
+              {
+                type: "button",
+                text: { type: "plain_text", text: "\u274c Reject", emoji: true },
+                action_id: "reject_request",
+                style: "danger",
+                value: req.id,
+              },
+            ],
+          }
+        )
+      }
+    } else {
+      blocks.push({
+        type: "section",
+        text: { type: "mrkdwn", text: ":white_check_mark: No pending requests to review. You're all caught up!" },
+      })
     }
   }
+
+  // ── Footer: Last updated timestamp ──
+  const nowTs = Math.floor(Date.now() / 1000)
+  blocks.push(
+    { type: "divider" },
+    {
+      type: "context",
+      elements: [{ type: "mrkdwn", text: `_Last updated: <!date^${nowTs}^{date_short_pretty} at {time}|${new Date().toISOString()}>_` }],
+    }
+  )
 
   return blocks
 }
@@ -958,7 +990,7 @@ async function handleAppHomeOpened(
     // User's own requests (all statuses, recent 15)
     adminClient
       .from("time_off_requests")
-      .select("id, status, category_id, start_date, end_date, total_days, rejection_reason, created_at")
+      .select("id, status, category_id, start_date, end_date, start_period, end_period, total_days, rejection_reason, created_at")
       .eq("profile_id", user.profile_id)
       .eq("workspace_id", user.workspace_id)
       .order("created_at", { ascending: false })
@@ -1052,13 +1084,15 @@ async function handleAppHomeOpened(
         emoji: cat?.emoji ?? null,
         startDate: r.start_date as string,
         endDate: r.end_date as string,
+        startPeriod: (r.start_period as string) || "morning",
+        endPeriod: (r.end_period as string) || "end_of_day",
         totalDays: r.total_days as number,
         createdAt: (r.created_at as string).substring(0, 10),
       }
     })
 
   const recentDecisions = allRequests
-    .filter((r) => r.status !== "pending")
+    .filter((r) => r.status !== "pending" && r.status !== "withdrawn")
     .slice(0, 5)
     .map((r) => {
       const cat = categoryMap.get(r.category_id)
@@ -1351,54 +1385,60 @@ async function handleSubmitTimeOff(
     },
     body: JSON.stringify({
       action: "submitted",
+      request_id: newRequestId,
       workspace_id: user.workspace_id,
       employee_profile_id: user.profile_id,
       skip_employee_dm: true,
     }),
   }).catch((err) => console.warn("[slack-events] slack-notify call failed:", err))
 
-  // Send confirmation DM to employee with Withdraw button
-  const dmRes = await slackApi("conversations.open", user.bot_token, { users: slackUserId })
-  if (dmRes.ok) {
-    const channelId = ((dmRes.channel as { id: string }) || {}).id
-    if (channelId) {
-      const icon = category.emoji || ":calendar:"
-      const dateRange =
-        startDate === endDate
-          ? formatDate(startDate!)
-          : `${formatDate(startDate!)} \u2013 ${formatDate(endDate!)}`
-      await slackApi("chat.postMessage", user.bot_token, {
-        channel: channelId,
-        text: `Your time-off request has been submitted!`,
-        blocks: [
-          {
-            type: "section",
-            text: {
-              type: "mrkdwn",
-              text: `:clipboard: *Request Submitted*\n\n${icon} *${category.name}* \u00b7 ${dateRange} \u00b7 ${formatDays(totalDays)}\nStatus: :hourglass_flowing_sand: Pending approval`,
-            },
-          },
-          {
-            type: "actions",
-            elements: [
+  // Fire-and-forget: Send confirmation DM + refresh Home Tab (outside 3s budget)
+  ;(async () => {
+    try {
+      const dmRes = await slackApi("conversations.open", user.bot_token, { users: slackUserId })
+      if (dmRes.ok) {
+        const channelId = ((dmRes.channel as { id: string }) || {}).id
+        if (channelId) {
+          const icon = category.emoji || ":calendar:"
+          const dateRange =
+            startDate === endDate
+              ? formatDate(startDate!)
+              : `${formatDate(startDate!)} \u2013 ${formatDate(endDate!)}`
+          await slackApi("chat.postMessage", user.bot_token, {
+            channel: channelId,
+            text: `Your time-off request has been submitted!`,
+            blocks: [
               {
-                type: "button",
-                text: { type: "plain_text", text: "\ud83d\udeab Withdraw Request", emoji: true },
-                action_id: "withdraw_from_dm",
-                style: "danger",
-                value: newRequestId,
+                type: "section",
+                text: {
+                  type: "mrkdwn",
+                  text: `:clipboard: *Request Submitted*\n\n${icon} *${category.name}* \u00b7 ${dateRange} \u00b7 ${formatDays(totalDays)}\nStatus: :hourglass_flowing_sand: Pending approval`,
+                },
+              },
+              {
+                type: "actions",
+                elements: [
+                  {
+                    type: "button",
+                    text: { type: "plain_text", text: "\ud83d\udeab Withdraw Request", emoji: true },
+                    action_id: "withdraw_from_dm",
+                    style: "danger",
+                    value: newRequestId,
+                  },
+                ],
               },
             ],
-          },
-        ],
-      })
+          })
+        }
+      }
+    } catch (err) {
+      console.warn("[slack-events] confirmation DM error:", err)
     }
-  }
-
-  // Refresh the submitter's Home Tab so pending section updates
-  refreshHomeTab(adminClient, slackUserId, slackTeamId).catch((err) =>
-    console.error("[slack-events] refreshHomeTab after submit error:", err)
-  )
+    // Refresh Home Tab
+    refreshHomeTab(adminClient, slackUserId, slackTeamId).catch((err) =>
+      console.error("[slack-events] refreshHomeTab after submit error:", err)
+    )
+  })()
 
   return null // null = close modal (success)
 }
@@ -1574,17 +1614,6 @@ async function handleApproveRequest(
     console.error("[slack-events] refreshHomeTab for admin after approve error:", err)
   )
 
-  // Fire-and-forget: send email notification
-  const supabaseUrl = Deno.env.get("SUPABASE_URL")!
-  const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
-  fetch(`${supabaseUrl}/functions/v1/send-time-off-notification`, {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${supabaseServiceKey}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({ request_id: requestId, action: "approved" }),
-  }).catch((err) => console.warn("[slack-events] Email notification failed:", err))
 }
 
 async function handleRejectButton(
@@ -1788,18 +1817,6 @@ async function handleRejectSubmission(
   refreshHomeTab(adminClient, slackUserId, slackTeamId).catch((err) =>
     console.error("[slack-events] refreshHomeTab for admin after reject error:", err)
   )
-
-  // Fire-and-forget: send email notification
-  const supabaseUrl = Deno.env.get("SUPABASE_URL")!
-  const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
-  fetch(`${supabaseUrl}/functions/v1/send-time-off-notification`, {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${supabaseServiceKey}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({ request_id, action: "rejected" }),
-  }).catch((err) => console.warn("[slack-events] Email notification failed:", err))
 
   return null // close modal
 }

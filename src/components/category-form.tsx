@@ -1,4 +1,4 @@
-import { useMemo, useEffect, useRef } from "react"
+import { useState, useMemo, useEffect, useRef } from "react"
 import { cn, pluralize } from "@/lib/utils"
 import { useForm, useWatch, Controller } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
@@ -138,9 +138,15 @@ export function CategoryForm({
   }, [isValid, isDirty, mode])
 
   const canSubmit = isValid && (mode === "add" || isDirty)
+  const [submitError, setSubmitError] = useState<string | null>(null)
 
   async function onFormSubmit(data: CategoryFormValues) {
-    await onSubmit(data)
+    try {
+      setSubmitError(null)
+      await onSubmit(data)
+    } catch (err) {
+      setSubmitError(err instanceof Error ? err.message : "Something went wrong. Please try again.")
+    }
   }
 
   return (
@@ -636,6 +642,13 @@ export function CategoryForm({
           </div>
         )}
       </div>
+
+      {/* Error */}
+      {submitError && (
+        <div className="w-[600px]">
+          <p className="text-sm text-destructive">{submitError}</p>
+        </div>
+      )}
 
       {/* Actions */}
       <div className="w-[600px] flex items-center justify-between pt-3">

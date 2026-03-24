@@ -1,4 +1,3 @@
-import * as XLSX from "xlsx"
 import { fetchReportEmployees, fetchAllEmployeeBalances } from "@/lib/report-service"
 import { fetchTimeOffRequests } from "@/lib/time-off-request-service"
 import { fetchTimeOffCategories } from "@/lib/time-off-category-service"
@@ -22,6 +21,8 @@ function getEmployeeName(firstName: string | null, lastName: string | null): str
 }
 
 export async function generateReport(workspaceId: string): Promise<void> {
+  const XLSX = await import("xlsx")
+
   const [employees, balances, categories, requests] = await Promise.all([
     fetchReportEmployees(workspaceId),
     fetchAllEmployeeBalances(workspaceId),

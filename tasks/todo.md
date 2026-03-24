@@ -60,3 +60,29 @@
 - [ ] Apply migration: `supabase db push`
 - [ ] Deploy delete-workspace: `supabase functions deploy delete-workspace`
 - [ ] Deploy invite-employee: `supabase functions deploy invite-employee`
+
+---
+
+# Slack Integration — Calamari-Standard UX Audit Fixes
+
+## P0 — Data Integrity
+- [x] Add `request_id` to slack-events notification payload (slack-events:1352)
+- [x] Create web-facing `reject_time_off_request` RPC with row locking (migration)
+- [x] Route web rejections through the new RPC (time-off-request-service.ts:92-99)
+- [x] Add employee-status guard to both approval RPCs (migration)
+
+## P1 — UX Polish
+- [x] Add empty states: Admin Panel, Pending Requests, Recent Decisions (slack-events buildHomeTabBlocks)
+- [x] Fix orphan dividers — always render sections so dividers aren't stranded
+- [x] Move confirmation DM out of synchronous `view_submission` path
+
+## P2 — Polish
+- [x] Add "Last updated" timestamp to Home Tab footer
+- [x] Show truncation note when balances exceed 10 categories
+- [x] Include half-day period labels in Home Tab pending requests
+- [x] Filter withdrawn requests from Recent Decisions
+
+## Deployment
+- [x] Apply migration: `supabase db push`
+- [x] Deploy slack-events: `supabase functions deploy slack-events`
+- [x] Deploy slack-notify: `supabase functions deploy slack-notify`

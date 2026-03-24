@@ -48,7 +48,10 @@
       "mcp__supabase__execute_sql",
       "mcp__supabase__get_logs",
       "mcp__supabase__get_publishable_keys",
-      "Bash(./node_modules/.bin/tsc --noEmit)"
+      "Bash(./node_modules/.bin/tsc --noEmit)",
+      "Bash(xargs cat:*)",
+      "Bash(find /Users/yaroslavtokariev/Desktop/Excited/Figma-To-Code-Projects/Nova_pto/supabase/functions/slack-* -type f)",
+      "Bash(find /Users/yaroslavtokariev/Desktop/Excited/Figma-To-Code-Projects/Nova_pto/src/components -type f -name \"*.tsx\" -exec wc -l {})"
     ]
   },
   "enableAllProjectMcpServers": true,

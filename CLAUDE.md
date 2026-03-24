@@ -116,7 +116,6 @@ All in `src/hooks/`. Each wraps one domain's service calls in TanStack Query:
 ### Supabase Edge Functions
 
 - `supabase/functions/invite-employee/` — Deno function: verifies caller JWT + admin role, creates Supabase auth user via admin API, inserts `profiles` row.
-- `supabase/functions/send-time-off-notification/` — Deno function for email notifications on request status changes.
 
 Deploy with `supabase functions deploy <function-name>`.
 

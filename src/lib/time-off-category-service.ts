@@ -31,11 +31,12 @@ export type CreateCategoryData = {
 
 export type UpdateCategoryData = Omit<CreateCategoryData, "workspace_id" | "sort_order">
 
-export async function fetchCategory(categoryId: string): Promise<TimeOffCategory> {
+export async function fetchCategory(categoryId: string, workspaceId: string): Promise<TimeOffCategory> {
   const { data, error } = await supabase
     .from("time_off_categories")
     .select("*")
     .eq("id", categoryId)
+    .eq("workspace_id", workspaceId)
     .single()
 
   if (error) throw error
@@ -55,12 +56,14 @@ export async function createCategory(data: CreateCategoryData): Promise<TimeOffC
 
 export async function updateCategory(
   categoryId: string,
-  data: UpdateCategoryData
+  data: UpdateCategoryData,
+  workspaceId: string
 ): Promise<TimeOffCategory> {
   const { data: result, error } = await supabase
     .from("time_off_categories")
     .update(data)
     .eq("id", categoryId)
+    .eq("workspace_id", workspaceId)
     .select()
     .single()
 
@@ -83,12 +86,14 @@ export async function fetchTimeOffCategories(
 
 export async function updateCategoryActive(
   categoryId: string,
-  isActive: boolean
+  isActive: boolean,
+  workspaceId: string
 ) {
   const { data, error } = await supabase
     .from("time_off_categories")
     .update({ is_active: isActive })
     .eq("id", categoryId)
+    .eq("workspace_id", workspaceId)
     .select()
     .single()
 
@@ -96,17 +101,19 @@ export async function updateCategoryActive(
   return data
 }
 
-export async function deleteCategory(categoryId: string) {
+export async function deleteCategory(categoryId: string, workspaceId: string) {
   const { error } = await supabase
     .from("time_off_categories")
     .delete()
     .eq("id", categoryId)
+    .eq("workspace_id", workspaceId)
 
   if (error) throw error
 }
 
 export async function updateCategorySortOrder(
-  items: { id: string; sort_order: number }[]
+  items: { id: string; sort_order: number }[],
+  workspaceId: string
 ) {
   const results = await Promise.all(
     items.map((item) =>
@@ -114,6 +121,7 @@ export async function updateCategorySortOrder(
         .from("time_off_categories")
         .update({ sort_order: item.sort_order })
         .eq("id", item.id)
+        .eq("workspace_id", workspaceId)
     )
   )
 

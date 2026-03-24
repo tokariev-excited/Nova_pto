@@ -172,7 +172,7 @@ export function RequestsPage() {
           {/* Body */}
           {isLoading && requests.length === 0 ? (
             <div className="flex items-center justify-center py-16">
-              <p className="text-sm text-muted-foreground">Loading...</p>
+              <div className="size-5 animate-spin rounded-full border-2 border-muted-foreground border-t-foreground" />
             </div>
           ) : isError && requests.length === 0 ? (
             <div className="flex items-center justify-center py-16">

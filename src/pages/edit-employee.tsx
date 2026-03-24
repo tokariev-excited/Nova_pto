@@ -80,7 +80,7 @@ export function EditEmployeePage() {
           />
         </div>
         <div className="flex-1 flex items-center justify-center">
-          <p className="text-sm text-muted-foreground">Loading...</p>
+          <div className="size-5 animate-spin rounded-full border-2 border-muted-foreground border-t-foreground" />
         </div>
       </div>
     )

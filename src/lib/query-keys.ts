@@ -6,7 +6,7 @@ export const employeeKeys = {
     ["employees", workspaceId, "list", status] as const,
   counts: (workspaceId: string) =>
     ["employees", workspaceId, "counts"] as const,
-  detail: (employeeId: string) => ["employees", "detail", employeeId] as const,
+  detail: (workspaceId: string, employeeId: string) => ["employees", workspaceId, "detail", employeeId] as const,
 }
 
 export const departmentKeys = {
@@ -16,7 +16,7 @@ export const departmentKeys = {
 export const timeOffCategoryKeys = {
   all: (workspaceId: string) => ["timeOffCategories", workspaceId] as const,
   list: (workspaceId: string) => ["timeOffCategories", workspaceId, "list"] as const,
-  detail: (categoryId: string) => ["timeOffCategories", "detail", categoryId] as const,
+  detail: (workspaceId: string, categoryId: string) => ["timeOffCategories", workspaceId, "detail", categoryId] as const,
 }
 
 export const holidayKeys = {
@@ -30,10 +30,10 @@ export const timeOffRequestKeys = {
 }
 
 export const employeeBalanceKeys = {
-  single: (employeeId: string, categoryId: string) =>
-    ["employeeBalances", employeeId, categoryId] as const,
-  allForEmployee: (employeeId: string) =>
-    ["employeeBalances", employeeId] as const,
+  single: (workspaceId: string, employeeId: string, categoryId: string) =>
+    ["employeeBalances", workspaceId, employeeId, categoryId] as const,
+  allForEmployee: (workspaceId: string, employeeId: string) =>
+    ["employeeBalances", workspaceId, employeeId] as const,
 }
 
 export const activeEmployeeKeys = {

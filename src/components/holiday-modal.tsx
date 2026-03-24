@@ -68,6 +68,9 @@ export function HolidayModal({ open, onOpenChange, holiday }: HolidayModalProps)
             addToast({ title: "Holiday updated", description: `${name.trim()} has been updated` })
             onOpenChange(false)
           },
+          onError: () => {
+            addToast({ variant: "error", title: "Failed to update holiday", description: "Something went wrong. Please try again." })
+          },
         }
       )
     } else {
@@ -82,6 +85,9 @@ export function HolidayModal({ open, onOpenChange, holiday }: HolidayModalProps)
           onSuccess: () => {
             addToast({ title: "Holiday created", description: `${name.trim()} has been added` })
             onOpenChange(false)
+          },
+          onError: () => {
+            addToast({ variant: "error", title: "Failed to create holiday", description: "Something went wrong. Please try again." })
           },
         }
       )

@@ -33,18 +33,22 @@ export function useEmployeeBalance(
   employeeId: string | undefined,
   categoryId: string | undefined
 ) {
+  const { workspace } = useAuth()
+
   return useQuery({
-    queryKey: employeeBalanceKeys.single(employeeId ?? "", categoryId ?? ""),
-    queryFn: () => fetchEmployeeBalance(employeeId!, categoryId!),
-    enabled: !!employeeId && !!categoryId,
+    queryKey: employeeBalanceKeys.single(workspace?.id ?? "", employeeId ?? "", categoryId ?? ""),
+    queryFn: () => fetchEmployeeBalance(employeeId!, categoryId!, workspace!.id),
+    enabled: !!employeeId && !!categoryId && !!workspace,
   })
 }
 
 export function useEmployeeBalances(employeeId: string | undefined) {
+  const { workspace } = useAuth()
+
   return useQuery({
-    queryKey: employeeBalanceKeys.allForEmployee(employeeId ?? ""),
-    queryFn: () => fetchEmployeeBalances(employeeId!),
-    enabled: !!employeeId,
+    queryKey: employeeBalanceKeys.allForEmployee(workspace?.id ?? "", employeeId ?? ""),
+    queryFn: () => fetchEmployeeBalances(employeeId!, workspace!.id),
+    enabled: !!employeeId && !!workspace,
   })
 }
 
@@ -57,10 +61,10 @@ export function useCreateTimeOffRecordMutation() {
     onSuccess: (_data, variables) => {
       if (workspace) {
         queryClient.invalidateQueries({ queryKey: timeOffRequestKeys.all(workspace.id) })
+        queryClient.invalidateQueries({
+          queryKey: employeeBalanceKeys.allForEmployee(workspace.id, variables.employee_id),
+        })
       }
-      queryClient.invalidateQueries({
-        queryKey: employeeBalanceKeys.allForEmployee(variables.employee_id),
-      })
     },
   })
 }
@@ -71,7 +75,7 @@ export function useUpdateRequestStatusMutation() {
 
   return useMutation({
     mutationFn: ({ requestId, status }: { requestId: string; status: TimeOffStatus }) =>
-      updateTimeOffRequestStatus(requestId, status),
+      updateTimeOffRequestStatus(requestId, status, workspace!.id),
     onSuccess: () => {
       if (workspace) {
         queryClient.invalidateQueries({ queryKey: timeOffRequestKeys.all(workspace.id) })
@@ -105,10 +109,10 @@ export function useApproveRequestMutation() {
     onSuccess: (_data, variables) => {
       if (workspace) {
         queryClient.invalidateQueries({ queryKey: timeOffRequestKeys.all(workspace.id) })
+        queryClient.invalidateQueries({
+          queryKey: employeeBalanceKeys.allForEmployee(workspace.id, variables.profileId),
+        })
       }
-      queryClient.invalidateQueries({
-        queryKey: employeeBalanceKeys.allForEmployee(variables.profileId),
-      })
     },
   })
 }
@@ -148,10 +152,10 @@ export function useMyTimeOffRequests() {
 
 export function useWithdrawRequestMutation() {
   const queryClient = useQueryClient()
-  const { profile } = useAuth()
+  const { profile, workspace } = useAuth()
 
   return useMutation({
-    mutationFn: (requestId: string) => withdrawTimeOffRequest(requestId),
+    mutationFn: (requestId: string) => withdrawTimeOffRequest(requestId, workspace!.id),
     onSuccess: () => {
       if (profile) {
         queryClient.invalidateQueries({ queryKey: myRequestKeys.all(profile.id) })

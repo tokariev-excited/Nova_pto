@@ -6,8 +6,8 @@ export interface Holiday {
   is_custom: boolean
   country_code: string | null
   year: number | null
-  created_at: string
-  updated_at: string
+  created_at?: string
+  updated_at?: string
 }
 
 export interface NagerHoliday {

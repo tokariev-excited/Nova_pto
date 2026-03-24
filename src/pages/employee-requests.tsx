@@ -1,6 +1,6 @@
-import { useState, useMemo } from "react"
+import { useState, useMemo, useCallback, memo } from "react"
 import { BalanceOverview } from "@/components/balance-overview"
-import { CalendarClock, EllipsisIcon, Eye, FileSearch, ListCheck, RotateCcw } from "lucide-react"
+import { CalendarClock, EllipsisIcon, Eye, FileSearch, ListCheck, ListX, RotateCcw } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import { Separator } from "@/components/ui/separator"
@@ -21,6 +21,7 @@ import {
   AlertDialogAction,
   AlertDialogCancel,
 } from "@/components/ui/alert-dialog"
+import { Empty } from "@/components/ui/empty"
 import { SubmitTimeOffRequestModal } from "@/components/submit-time-off-request-modal"
 import { RequestDetailsModal } from "@/components/request-details-modal"
 import { useMyTimeOffRequests, useWithdrawRequestMutation } from "@/hooks/use-time-off-requests"
@@ -30,15 +31,136 @@ import { getCategoryDisplay } from "@/lib/request-display"
 import { addToast } from "@/lib/toast"
 import type { TimeOffRequest } from "@/types/time-off-request"
 
+interface RequestHistoryRowProps {
+  req: TimeOffRequest
+  isLast: boolean
+  categoryMap: Map<string, { name: string; emoji?: string | null }>
+  onViewDetails: (req: TimeOffRequest) => void
+  onWithdraw: (req: TimeOffRequest) => void
+}
+
+const RequestHistoryRow = memo(function RequestHistoryRow({
+  req,
+  isLast,
+  categoryMap,
+  onViewDetails,
+  onWithdraw,
+}: RequestHistoryRowProps) {
+  const [popoverOpen, setPopoverOpen] = useState(false)
+  const isPending = req.status === "pending"
+
+  return (
+    <div className="flex hover:bg-muted/50 cursor-pointer" onClick={() => onViewDetails(req)}>
+      <DataTableCell
+        type="text"
+        size="md"
+        className="w-[260px] pl-4"
+        labelClassName="font-medium"
+        label={getCategoryDisplay(req, categoryMap)}
+        border={!isLast}
+      />
+      <DataTableCell
+        type="text-description"
+        size="md"
+        className="w-[240px]"
+        label={formatPeriod(req.start_date, req.end_date)}
+        description={formatDays(req.total_days)}
+        border={!isLast}
+      />
+      <DataTableCell
+        type="text"
+        size="md"
+        className="flex-1"
+        label={req.comment ?? "—"}
+        border={!isLast}
+      />
+      <DataTableCell
+        type="badge"
+        size="md"
+        className="w-[240px]"
+        badgeNode={
+          <Badge variant={req.status}>
+            {req.status.charAt(0).toUpperCase() + req.status.slice(1)}
+          </Badge>
+        }
+        border={!isLast}
+      />
+      <div
+        className="relative flex items-center justify-center w-14 h-[72px] px-3 py-2"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <Popover open={popoverOpen} onOpenChange={setPopoverOpen}>
+          <PopoverTrigger asChild>
+            <Button variant="ghost" size="icon-sm">
+              <EllipsisIcon className="size-4" />
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent align="end" className="p-0 border-0 shadow-none">
+            <ComboboxMenu
+              groups={
+                isPending
+                  ? [
+                      {
+                        items: [
+                          {
+                            type: "icon",
+                            icon: <Eye className="size-4" />,
+                            label: "View details",
+                            onClick: () => {
+                              setPopoverOpen(false)
+                              onViewDetails(req)
+                            },
+                          },
+                        ],
+                      },
+                      {
+                        items: [
+                          {
+                            type: "icon",
+                            variant: "destructive",
+                            icon: <RotateCcw className="size-4" />,
+                            label: "Withdraw request",
+                            onClick: () => {
+                              setPopoverOpen(false)
+                              onWithdraw(req)
+                            },
+                          },
+                        ],
+                      },
+                    ]
+                  : [
+                      {
+                        items: [
+                          {
+                            type: "icon",
+                            icon: <Eye className="size-4" />,
+                            label: "View details",
+                            onClick: () => {
+                              setPopoverOpen(false)
+                              onViewDetails(req)
+                            },
+                          },
+                        ],
+                      },
+                    ]
+              }
+            />
+          </PopoverContent>
+        </Popover>
+        {!isLast && <div className="absolute bottom-0 left-0 right-0 border-b border-border" />}
+      </div>
+    </div>
+  )
+})
+
 export function EmployeeRequestsPage() {
   const [requestModalOpen, setRequestModalOpen] = useState(false)
-  const [openPopoverId, setOpenPopoverId] = useState<string | null>(null)
   const [withdrawTarget, setWithdrawTarget] = useState<TimeOffRequest | null>(null)
   const [detailsRequest, setDetailsRequest] = useState<TimeOffRequest | null>(null)
   const [pageSize, setPageSize] = useState(10)
   const [currentPage, setCurrentPage] = useState(1)
 
-  const { data: myRequests = [], isLoading } = useMyTimeOffRequests()
+  const { data: myRequests = [], isLoading, isError, refetch } = useMyTimeOffRequests()
   const { data: categories = [] } = useTimeOffCategories()
   const withdrawMutation = useWithdrawRequestMutation()
 
@@ -55,7 +177,16 @@ export function EmployeeRequestsPage() {
     [myRequests, safePage, pageSize]
   )
 
-  function handleWithdrawConfirm() {
+  const handleViewDetails = useCallback((req: TimeOffRequest) => {
+    setDetailsRequest(req)
+  }, [])
+
+  const handleWithdrawRequest = useCallback((req: TimeOffRequest) => {
+    setWithdrawTarget(req)
+  }, [])
+
+  function handleWithdrawConfirm(e: React.MouseEvent) {
+    e.preventDefault()
     if (!withdrawTarget) return
     withdrawMutation.mutate(withdrawTarget.id, {
       onSuccess: () => {
@@ -107,6 +238,21 @@ export function EmployeeRequestsPage() {
               <div className="flex items-center justify-center py-16">
                 <div className="size-5 animate-spin rounded-full border-2 border-muted-foreground border-t-foreground" />
               </div>
+            ) : isError && myRequests.length === 0 ? (
+              <div className="flex items-center justify-center py-16">
+                <Empty
+                  media={{ type: "icon", icon: ListX }}
+                  title="Unable to load requests"
+                  description="Something went wrong. Please try again."
+                  content={{
+                    layout: "single",
+                    primaryAction: {
+                      label: "Retry",
+                      onClick: () => refetch(),
+                    },
+                  }}
+                />
+              </div>
             ) : myRequests.length === 0 ? (
               <div className="flex flex-col items-center gap-6 py-12">
                 <div className="flex flex-col items-center gap-2 max-w-sm">
@@ -129,120 +275,16 @@ export function EmployeeRequestsPage() {
               </div>
             ) : (
               <div>
-                {paginatedRequests.map((req, index) => {
-                  const isLast = index === paginatedRequests.length - 1
-                  const isPending = req.status === "pending"
-                  return (
-                    <div key={req.id} className="flex hover:bg-muted/50 cursor-pointer" onClick={() => setDetailsRequest(req)}>
-                      <DataTableCell
-                        type="text"
-                        size="md"
-                        className="w-[260px] pl-4"
-                        labelClassName="font-medium"
-                        label={getCategoryDisplay(req, categoryMap)}
-                        border={!isLast}
-                      />
-                      <DataTableCell
-                        type="text-description"
-                        size="md"
-                        className="w-[240px]"
-                        label={formatPeriod(req.start_date, req.end_date)}
-                        description={formatDays(req.total_days)}
-                        border={!isLast}
-                      />
-                      <DataTableCell
-                        type="text"
-                        size="md"
-                        className="flex-1"
-                        label={req.comment ?? "—"}
-                        border={!isLast}
-                      />
-                      <DataTableCell
-                        type="badge"
-                        size="md"
-                        className="w-[240px]"
-                        badgeNode={
-                          <Badge variant={req.status}>
-                            {req.status.charAt(0).toUpperCase() + req.status.slice(1)}
-                          </Badge>
-                        }
-                        border={!isLast}
-                      />
-                      <div
-                        className="relative flex items-center justify-center w-14 h-[72px] px-3 py-2"
-                        onClick={(e) => e.stopPropagation()}
-                      >
-                        <Popover
-                          open={openPopoverId === req.id}
-                          onOpenChange={(open) =>
-                            setOpenPopoverId(open ? req.id : null)
-                          }
-                        >
-                          <PopoverTrigger asChild>
-                            <Button variant="ghost" size="icon-sm">
-                              <EllipsisIcon className="size-4" />
-                            </Button>
-                          </PopoverTrigger>
-                          <PopoverContent
-                            align="end"
-                            className="p-0 border-0 shadow-none"
-                          >
-                            <ComboboxMenu
-                              groups={
-                                isPending
-                                  ? [
-                                      {
-                                        items: [
-                                          {
-                                            type: "icon",
-                                            icon: <Eye className="size-4" />,
-                                            label: "View details",
-                                            onClick: () => {
-                                              setOpenPopoverId(null)
-                                              setDetailsRequest(req)
-                                            },
-                                          },
-                                        ],
-                                      },
-                                      {
-                                        items: [
-                                          {
-                                            type: "icon",
-                                            variant: "destructive",
-                                            icon: <RotateCcw className="size-4" />,
-                                            label: "Withdraw request",
-                                            onClick: () => {
-                                              setOpenPopoverId(null)
-                                              setWithdrawTarget(req)
-                                            },
-                                          },
-                                        ],
-                                      },
-                                    ]
-                                  : [
-                                      {
-                                        items: [
-                                          {
-                                            type: "icon",
-                                            icon: <Eye className="size-4" />,
-                                            label: "View details",
-                                            onClick: () => {
-                                              setOpenPopoverId(null)
-                                              setDetailsRequest(req)
-                                            },
-                                          },
-                                        ],
-                                      },
-                                    ]
-                              }
-                            />
-                          </PopoverContent>
-                        </Popover>
-                        {!isLast && <div className="absolute bottom-0 left-0 right-0 border-b border-border" />}
-                      </div>
-                    </div>
-                  )
-                })}
+                {paginatedRequests.map((req, index) => (
+                  <RequestHistoryRow
+                    key={req.id}
+                    req={req}
+                    isLast={index === paginatedRequests.length - 1}
+                    categoryMap={categoryMap}
+                    onViewDetails={handleViewDetails}
+                    onWithdraw={handleWithdrawRequest}
+                  />
+                ))}
               </div>
             )}
           </div>
@@ -293,8 +335,8 @@ export function EmployeeRequestsPage() {
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>No, keep it</AlertDialogCancel>
-            <AlertDialogAction onClick={handleWithdrawConfirm}>
+            <AlertDialogCancel disabled={withdrawMutation.isPending}>No, keep it</AlertDialogCancel>
+            <AlertDialogAction onClick={handleWithdrawConfirm} disabled={withdrawMutation.isPending} loading={withdrawMutation.isPending}>
               Yes, withdraw
             </AlertDialogAction>
           </AlertDialogFooter>

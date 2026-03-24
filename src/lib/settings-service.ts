@@ -53,19 +53,21 @@ export async function createDepartment(
   return data
 }
 
-export async function updateDepartment(departmentId: string, name: string) {
+export async function updateDepartment(departmentId: string, name: string, workspaceId: string) {
   const { error } = await supabase
     .from("departments")
     .update({ name })
     .eq("id", departmentId)
+    .eq("workspace_id", workspaceId)
   if (error) throw error
 }
 
-export async function deleteDepartment(departmentId: string) {
+export async function deleteDepartment(departmentId: string, workspaceId: string) {
   const { error } = await supabase
     .from("departments")
     .delete()
     .eq("id", departmentId)
+    .eq("workspace_id", workspaceId)
   if (error) throw error
 }
 

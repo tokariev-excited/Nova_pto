@@ -31,7 +31,7 @@ export function useToggleCategoryActiveMutation() {
 
   return useMutation({
     mutationFn: ({ categoryId, isActive }: { categoryId: string; isActive: boolean }) =>
-      updateCategoryActive(categoryId, isActive),
+      updateCategoryActive(categoryId, isActive, workspace!.id),
     onSuccess: () => {
       if (workspace) {
         queryClient.invalidateQueries({ queryKey: timeOffCategoryKeys.all(workspace.id) })
@@ -45,7 +45,7 @@ export function useDeleteCategoryMutation() {
   const { workspace } = useAuth()
 
   return useMutation({
-    mutationFn: (categoryId: string) => deleteCategory(categoryId),
+    mutationFn: (categoryId: string) => deleteCategory(categoryId, workspace!.id),
     onSuccess: () => {
       if (workspace) {
         queryClient.invalidateQueries({ queryKey: timeOffCategoryKeys.all(workspace.id) })
@@ -59,9 +59,9 @@ export function useCategory(id: string | undefined) {
   const queryClient = useQueryClient()
 
   return useQuery({
-    queryKey: timeOffCategoryKeys.detail(id ?? ""),
-    queryFn: () => fetchCategory(id!),
-    enabled: !!id,
+    queryKey: timeOffCategoryKeys.detail(workspace?.id ?? "", id ?? ""),
+    queryFn: () => fetchCategory(id!, workspace!.id),
+    enabled: !!id && !!workspace,
     placeholderData: () => {
       if (!id || !workspace) return undefined
       const categories = queryClient.getQueryData<TimeOffCategory[]>(
@@ -92,14 +92,14 @@ export function useUpdateCategoryMutation() {
 
   return useMutation({
     mutationFn: ({ categoryId, data }: { categoryId: string; data: UpdateCategoryData }) =>
-      updateCategory(categoryId, data),
+      updateCategory(categoryId, data, workspace!.id),
     onSuccess: (_result, variables) => {
       if (workspace) {
         queryClient.invalidateQueries({ queryKey: timeOffCategoryKeys.all(workspace.id) })
+        queryClient.invalidateQueries({
+          queryKey: timeOffCategoryKeys.detail(workspace.id, variables.categoryId),
+        })
       }
-      queryClient.invalidateQueries({
-        queryKey: timeOffCategoryKeys.detail(variables.categoryId),
-      })
     },
   })
 }
@@ -110,7 +110,7 @@ export function useReorderCategoriesMutation() {
 
   return useMutation({
     mutationFn: (items: { id: string; sort_order: number }[]) =>
-      updateCategorySortOrder(items),
+      updateCategorySortOrder(items, workspace!.id),
     onMutate: async (items) => {
       if (!workspace) return
 

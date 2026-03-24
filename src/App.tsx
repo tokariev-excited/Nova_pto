@@ -64,7 +64,7 @@ export default function App() {
       <AuthQueryBridge />
       <AuthProvider>
         <BrowserRouter>
-          <Suspense fallback={null}>
+          <Suspense fallback={<div className="flex min-h-screen items-center justify-center"><div className="size-6 animate-spin rounded-full border-2 border-muted-foreground border-t-foreground" /></div>}>
           <Routes>
             <Route path="/auth/callback" element={<AuthCallbackPage />} />
             <Route path="/login" element={<LoginPage />} />

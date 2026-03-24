@@ -14,8 +14,8 @@ function BalanceCardSkeleton() {
 
 export function BalanceOverview() {
   const { profile } = useAuth()
-  const { data: categories = [], isLoading: categoriesLoading } = useTimeOffCategories()
-  const { data: balances = [], isLoading: balancesLoading } = useEmployeeBalances(profile?.id)
+  const { data: categories = [], isLoading: categoriesLoading, isError: categoriesError } = useTimeOffCategories()
+  const { data: balances = [], isLoading: balancesLoading, isError: balancesError } = useEmployeeBalances(profile?.id)
 
   const balanceMap = useMemo(() => {
     const map = new Map<string, number>()
@@ -35,6 +35,17 @@ export function BalanceOverview() {
     const days = balanceMap.get(categoryId)
     if (days === undefined) return "—"
     return `${days} ${days === 1 ? "day" : "days"}`
+  }
+
+  const hasError = (categoriesError && categories.length === 0) || (balancesError && balances.length === 0)
+
+  if (hasError) {
+    return (
+      <div className="flex flex-col gap-3">
+        <p className="text-lg font-semibold tracking-tight text-primary">Balance overview</p>
+        <p className="text-sm text-muted-foreground">Unable to load balances. Please try refreshing the page.</p>
+      </div>
+    )
   }
 
   if (!isLoading && activeCategories.length === 0) return null

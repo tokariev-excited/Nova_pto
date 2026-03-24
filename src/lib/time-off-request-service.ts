@@ -4,7 +4,7 @@ import type { EmployeeBalance } from "@/types/employee-balance"
 
 export async function fetchTimeOffRequests(workspaceId: string) {
   const { data, error } = await supabase
-    .from("time_off_requests")
+    .from("time_off_requests_safe")
     .select("*")
     .eq("workspace_id", workspaceId)
     .neq("status", "withdrawn")
@@ -16,13 +16,15 @@ export async function fetchTimeOffRequests(workspaceId: string) {
 
 export async function fetchEmployeeBalance(
   employeeId: string,
-  categoryId: string
+  categoryId: string,
+  workspaceId: string
 ) {
   const { data, error } = await supabase
     .from("employee_balances")
-    .select("*")
+    .select("id, employee_id, category_id, remaining_days, workspace_id")
     .eq("employee_id", employeeId)
     .eq("category_id", categoryId)
+    .eq("workspace_id", workspaceId)
     .maybeSingle()
 
   if (error) throw error
@@ -30,12 +32,14 @@ export async function fetchEmployeeBalance(
 }
 
 export async function fetchEmployeeBalances(
-  employeeId: string
+  employeeId: string,
+  workspaceId: string
 ): Promise<EmployeeBalance[]> {
   const { data, error } = await supabase
     .from("employee_balances")
-    .select("*")
+    .select("id, employee_id, category_id, remaining_days, workspace_id")
     .eq("employee_id", employeeId)
+    .eq("workspace_id", workspaceId)
 
   if (error) throw error
   return (data ?? []) as EmployeeBalance[]
@@ -70,12 +74,14 @@ export async function createTimeOffRecord(params: CreateTimeOffRecordParams) {
 
 export async function updateTimeOffRequestStatus(
   requestId: string,
-  status: TimeOffStatus
+  status: TimeOffStatus,
+  workspaceId: string
 ) {
   const { data, error } = await supabase
     .from("time_off_requests")
     .update({ status })
     .eq("id", requestId)
+    .eq("workspace_id", workspaceId)
     .select()
     .single()
 
@@ -84,23 +90,12 @@ export async function updateTimeOffRequestStatus(
 }
 
 export async function rejectTimeOffRequest(requestId: string, rejectionReason: string) {
-  const { data, error } = await supabase
-    .from("time_off_requests")
-    .update({ status: "rejected", rejection_reason: rejectionReason })
-    .eq("id", requestId)
-    .select()
-    .single()
+  const { data, error } = await supabase.rpc("reject_time_off_request", {
+    p_request_id: requestId,
+    p_rejection_reason: rejectionReason,
+  })
 
   if (error) throw error
-
-  // Fire-and-forget: email notification
-  supabase.functions
-    .invoke("send-time-off-notification", {
-      body: { request_id: requestId, action: "rejected" },
-    })
-    .catch((err) => {
-      console.warn("[rejectTimeOffRequest] Email notification failed (non-fatal):", err)
-    })
 
   // Fire-and-forget: Slack notification
   supabase.functions
@@ -111,7 +106,7 @@ export async function rejectTimeOffRequest(requestId: string, rejectionReason: s
       console.warn("[rejectTimeOffRequest] Slack notification failed (non-fatal):", err)
     })
 
-  return data as TimeOffRequest
+  return data
 }
 
 export async function approveTimeOffRequest(requestId: string) {
@@ -120,15 +115,6 @@ export async function approveTimeOffRequest(requestId: string) {
   })
 
   if (error) throw error
-
-  // Fire-and-forget: email notification
-  supabase.functions
-    .invoke("send-time-off-notification", {
-      body: { request_id: requestId, action: "approved" },
-    })
-    .catch((err) => {
-      console.warn("[approveTimeOffRequest] Email notification failed (non-fatal):", err)
-    })
 
   // Fire-and-forget: Slack notification
   supabase.functions
@@ -150,11 +136,12 @@ export interface ComboboxEmployee {
   avatar_url?: string | null
 }
 
-export async function withdrawTimeOffRequest(requestId: string) {
+export async function withdrawTimeOffRequest(requestId: string, workspaceId: string) {
   const { data, error } = await supabase
     .from("time_off_requests")
     .update({ status: "withdrawn" })
     .eq("id", requestId)
+    .eq("workspace_id", workspaceId)
     .eq("status", "pending")
     .select()
     .single()
@@ -165,7 +152,7 @@ export async function withdrawTimeOffRequest(requestId: string) {
 
 export async function fetchMyTimeOffRequests(profileId: string, workspaceId: string) {
   const { data, error } = await supabase
-    .from("time_off_requests")
+    .from("time_off_requests_safe")
     .select("*")
     .eq("profile_id", profileId)
     .eq("workspace_id", workspaceId)
